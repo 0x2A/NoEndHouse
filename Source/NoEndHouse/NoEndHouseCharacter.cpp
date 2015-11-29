@@ -32,9 +32,33 @@ ANoEndHouseCharacter::ANoEndHouseCharacter()
 	Mesh1P->bCastDynamicShadow = false;
 	Mesh1P->CastShadow = false;
 
+	bCameraShakeWalking = bCameraShakeWalkingRight = false;
 
-	// Note: The ProjectileClass and the skeletal mesh/anim blueprints for Mesh1P are set in the
-	// derived blueprint asset named MyCharacter (to avoid direct content references in C++)
+	// *** This seems to be still broken in 4.9.2 ***
+	//Initialize camera shaking class
+	/*CameraShake = ConstructObject<UCameraShake>(UCameraShake::StaticClass());
+	CameraShake->OscillationDuration = 1.0f; //negative value will run forever
+	CameraShake->OscillationBlendInTime = 0.1f;
+	CameraShake->OscillationBlendOutTime = 0.2f;
+
+	CameraShake->RotOscillation.Pitch.Amplitude = 1.0f;
+	CameraShake->RotOscillation.Pitch.Frequency = 20.0f;
+	CameraShake->RotOscillation.Pitch.InitialOffset = EInitialOscillatorOffset::EOO_OffsetRandom;
+
+	CameraShake->RotOscillation.Yaw.Amplitude = 0.0f;
+	CameraShake->RotOscillation.Yaw.Frequency = 5.0f;
+	CameraShake->RotOscillation.Yaw.InitialOffset = EInitialOscillatorOffset::EOO_OffsetRandom;
+
+	CameraShake->RotOscillation.Roll.Amplitude = 1.0f;
+	CameraShake->RotOscillation.Roll.Frequency = 9.0f;
+	CameraShake->RotOscillation.Roll.InitialOffset = EInitialOscillatorOffset::EOO_OffsetRandom;
+
+	CameraShake->LocOscillation.Y.Amplitude = 0.0f;
+	CameraShake->LocOscillation.Z.Amplitude = 2.0f;
+	CameraShake->LocOscillation.Z.Frequency = 20.0f;
+	CameraShake->LocOscillation.Z.InitialOffset = EInitialOscillatorOffset::EOO_OffsetRandom;*/
+
+	PlayerController = nullptr;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -123,7 +147,31 @@ void ANoEndHouseCharacter::MoveForward(float Value)
 	{
 		// add movement in that direction
 		AddMovementInput(GetActorForwardVector(), Value);
+
+		//Handle camera shake
+		if (PlayerController)
+		{
+			if (CharacterMovement->IsWalking())
+			{
+				if (!bCameraShakeWalking)
+				{
+					bCameraShakeWalking = true;
+					if (!bCameraShakeWalkingRight)
+						PlayerController->ClientPlayCameraShake(CameraShakeWalk, abs(Value));
+				}
+			}
+			else
+				bCameraShakeWalking = false;
+		}
 	}
+	else
+		bCameraShakeWalking = false;
+
+	//only stop if both not enabled
+	if (PlayerController && !bCameraShakeWalking && !bCameraShakeWalkingRight)
+		PlayerController->ClientStopCameraShake(CameraShakeWalk);
+
+	OnMoveForward(Value);
 }
 
 void ANoEndHouseCharacter::MoveRight(float Value)
@@ -132,7 +180,27 @@ void ANoEndHouseCharacter::MoveRight(float Value)
 	{
 		// add movement in that direction
 		AddMovementInput(GetActorRightVector(), Value);
+
+		//Handle camera shake
+		if (PlayerController)
+		{
+			if (CharacterMovement->IsWalking())
+			{
+				if (!bCameraShakeWalkingRight)
+				{
+					bCameraShakeWalkingRight = true;
+					if (!bCameraShakeWalking)
+						PlayerController->ClientPlayCameraShake(CameraShakeWalk, abs(Value));
+				}
+			}
+			else
+				bCameraShakeWalkingRight = false;
+		}
 	}
+	else
+		bCameraShakeWalkingRight = false;
+
+	OnMoveRight(Value);
 }
 
 void ANoEndHouseCharacter::TurnAtRate(float Rate)
@@ -158,4 +226,16 @@ bool ANoEndHouseCharacter::EnableTouchscreenMovement(class UInputComponent* Inpu
 		InputComponent->BindTouch(EInputEvent::IE_Repeat, this, &ANoEndHouseCharacter::TouchUpdate);
 	}
 	return bResult;
+}
+
+void ANoEndHouseCharacter::PossessedBy(AController* NewController)
+{
+	Super::PossessedBy(NewController);
+
+	//cache current PlayerController so we dont have to cast every frame
+	APlayerController *controller = Cast<APlayerController>(NewController);
+	if (controller)
+	{
+		PlayerController = controller;
+	}
 }

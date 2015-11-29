@@ -18,6 +18,16 @@ class ANoEndHouseCharacter : public ACharacter
 	/** First person camera */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	class UCameraComponent* FirstPersonCameraComponent;
+
+	/** current player controller */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Gameplay, meta = (AllowPrivateAccess = "true"))
+	class APlayerController* PlayerController;
+
+
+
+	bool bCameraShakeWalking;
+	bool bCameraShakeWalkingRight;
+
 public:
 	ANoEndHouseCharacter();
 
@@ -32,7 +42,11 @@ public:
 	/** Gun muzzle's offset from the characters location */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Gameplay)
 	FVector GunOffset;
-	
+
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Camera)
+	TSubclassOf<UCameraShake> CameraShakeWalk;
+		
 	/** Sound to play each time we fire */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Gameplay)
 	class USoundBase* FireSound;
@@ -41,8 +55,15 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Gameplay)
 	class UAnimMontage* FireAnimation;
 
-protected:
+	UFUNCTION(BlueprintImplementableEvent, Category = Movement)
+	void OnMoveForward(float val);
 
+	UFUNCTION(BlueprintImplementableEvent, Category = Movement)
+	void OnMoveRight(float val);
+
+protected:
+	/** Called when this Pawn is possessed. Only called on the server (or in standalone). */
+	void PossessedBy(AController* NewController) override;
 
 	/** Handles moving forward/backward */
 	void MoveForward(float Val);
