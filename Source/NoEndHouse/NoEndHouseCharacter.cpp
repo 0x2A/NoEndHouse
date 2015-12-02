@@ -34,6 +34,13 @@ ANoEndHouseCharacter::ANoEndHouseCharacter()
 
 	bCameraShakeWalking = bCameraShakeWalkingRight = false;
 
+	CharacterMovement->NavAgentProps.bCanCrouch = true;
+
+	//chrouching
+	vCameraLocation = FirstPersonCameraComponent->RelativeLocation;
+	bIsCrouching = false;
+
+
 	// *** This seems to be still broken in 4.9.2 ***
 	//Initialize camera shaking class
 	/*CameraShake = ConstructObject<UCameraShake>(UCameraShake::StaticClass());
@@ -72,6 +79,8 @@ void ANoEndHouseCharacter::SetupPlayerInputComponent(class UInputComponent* Inpu
 	InputComponent->BindAction("Jump", IE_Pressed, this, &ACharacter::Jump);
 	InputComponent->BindAction("Jump", IE_Released, this, &ACharacter::StopJumping);
 
+	InputComponent->BindAction("Crouch", IE_Pressed, this, &ANoEndHouseCharacter::Crouch);
+	InputComponent->BindAction("Crouch", IE_Released, this, &ANoEndHouseCharacter::StopCrouching);
 	
 	InputComponent->BindAxis("MoveForward", this, &ANoEndHouseCharacter::MoveForward);
 	InputComponent->BindAxis("MoveRight", this, &ANoEndHouseCharacter::MoveRight);
@@ -202,6 +211,20 @@ void ANoEndHouseCharacter::MoveRight(float Value)
 
 	OnMoveRight(Value);
 }
+
+
+void ANoEndHouseCharacter::Crouch_Implementation()
+{
+	bIsCrouching = true;
+	ACharacter::Crouch();
+}
+
+void ANoEndHouseCharacter::StopCrouching_Implementation()
+{
+	bIsCrouching = false;
+	ACharacter::UnCrouch();
+}
+
 
 void ANoEndHouseCharacter::TurnAtRate(float Rate)
 {

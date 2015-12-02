@@ -28,6 +28,9 @@ class ANoEndHouseCharacter : public ACharacter
 	bool bCameraShakeWalking;
 	bool bCameraShakeWalkingRight;
 
+
+
+
 public:
 	ANoEndHouseCharacter();
 
@@ -43,6 +46,12 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Gameplay)
 	FVector GunOffset;
 
+	//crouching variables
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Movement)
+		FVector vCameraLocation;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Movement)
+		bool bIsCrouching;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Camera)
 	TSubclassOf<UCameraShake> CameraShakeWalk;
@@ -61,6 +70,12 @@ public:
 	UFUNCTION(BlueprintImplementableEvent, Category = Movement)
 	void OnMoveRight(float val);
 
+	UFUNCTION(BlueprintNativeEvent, Category = Movement)
+	void Crouch();
+
+	UFUNCTION(BlueprintNativeEvent, Category = Movement)
+	void StopCrouching();
+
 protected:
 	/** Called when this Pawn is possessed. Only called on the server (or in standalone). */
 	void PossessedBy(AController* NewController) override;
@@ -70,6 +85,7 @@ protected:
 
 	/** Handles stafing movement, left and right */
 	void MoveRight(float Val);
+
 
 	/**
 	 * Called via input to turn at a given rate.
