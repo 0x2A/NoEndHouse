@@ -66,6 +66,7 @@ ANoEndHouseCharacter::ANoEndHouseCharacter()
 	CameraShake->LocOscillation.Z.InitialOffset = EInitialOscillatorOffset::EOO_OffsetRandom;*/
 
 	PlayerController = nullptr;
+
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -81,7 +82,10 @@ void ANoEndHouseCharacter::SetupPlayerInputComponent(class UInputComponent* Inpu
 
 	InputComponent->BindAction("Crouch", IE_Pressed, this, &ANoEndHouseCharacter::Crouch);
 	InputComponent->BindAction("Crouch", IE_Released, this, &ANoEndHouseCharacter::StopCrouching);
-	
+
+	InputComponent->BindAction("Blink", IE_Pressed, this, &ANoEndHouseCharacter::Blink);
+	InputComponent->BindAction("Blink", IE_Released, this, &ANoEndHouseCharacter::StopBlinking);
+
 	InputComponent->BindAxis("MoveForward", this, &ANoEndHouseCharacter::MoveForward);
 	InputComponent->BindAxis("MoveRight", this, &ANoEndHouseCharacter::MoveRight);
 	
@@ -260,5 +264,33 @@ void ANoEndHouseCharacter::PossessedBy(AController* NewController)
 	if (controller)
 	{
 		PlayerController = controller;
+	}
+}
+
+void ANoEndHouseCharacter::Blink_Implementation()
+{
+	if (!BlinkMaterialInstance) return;
+	BlinkMaterialInstance->SetScalarParameterValue("Value", 0.0f);
+}
+
+void ANoEndHouseCharacter::StopBlinking_Implementation()
+{
+	if (!BlinkMaterialInstance) return;
+	BlinkMaterialInstance->SetScalarParameterValue("Value", 1.0f);
+
+}
+
+void ANoEndHouseCharacter::BeginPlay()
+{
+	Super::BeginPlay();
+
+	//create blink material instance from blink material defined in default properties
+	if (BlinkMaterial)
+	{
+		//first create material instance
+		BlinkMaterialInstance = UMaterialInstanceDynamic::Create(BlinkMaterial, this);
+
+		//add this instance to postProcessing settings
+		FirstPersonCameraComponent->PostProcessSettings.AddBlendable(BlinkMaterialInstance, 1.0f);
 	}
 }

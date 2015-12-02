@@ -30,7 +30,6 @@ class ANoEndHouseCharacter : public ACharacter
 
 
 
-
 public:
 	ANoEndHouseCharacter();
 
@@ -75,6 +74,23 @@ public:
 
 	UFUNCTION(BlueprintNativeEvent, Category = Movement)
 	void StopCrouching();
+
+	UFUNCTION(BlueprintNativeEvent, Category = Movement)
+		void Blink();
+
+	UFUNCTION(BlueprintNativeEvent, Category = Movement)
+		void StopBlinking();
+
+	//used to set a blink material from content browser
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Gameplay)
+	UMaterialInterface* BlinkMaterial;
+
+	//Used to hold a material instance so we can modify its properties
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Gameplay)
+	class UMaterialInstanceDynamic* BlinkMaterialInstance;
+
+
+	void BeginPlay() override;
 
 protected:
 	/** Called when this Pawn is possessed. Only called on the server (or in standalone). */
