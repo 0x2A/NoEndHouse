@@ -66,7 +66,9 @@ ANoEndHouseCharacter::ANoEndHouseCharacter()
 	CameraShake->LocOscillation.Z.InitialOffset = EInitialOscillatorOffset::EOO_OffsetRandom;*/
 
 	PlayerController = nullptr;
-
+	
+	Sanity = 100.0f;
+	FirstPersonCameraComponent->PostProcessSettings.bOverride_SceneFringeIntensity = true;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -293,4 +295,11 @@ void ANoEndHouseCharacter::BeginPlay()
 		//add this instance to postProcessing settings
 		FirstPersonCameraComponent->PostProcessSettings.AddBlendable(BlinkMaterialInstance, 1.0f);
 	}
+}
+
+void ANoEndHouseCharacter::SetSanity(float value)
+{
+	Sanity = FMath::Clamp(value, 0.0f, 100.0f);
+	FirstPersonCameraComponent->PostProcessSettings.SceneFringeIntensity = ((100.0f - Sanity) / 100.0f) * 5.0f;
+	
 }

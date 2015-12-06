@@ -50,7 +50,10 @@ public:
 		FVector vCameraLocation;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Movement)
-		bool bIsCrouching;
+	bool bIsCrouching;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Gameplay)
+		float Sanity;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Camera)
 	TSubclassOf<UCameraShake> CameraShakeWalk;
@@ -62,6 +65,10 @@ public:
 	/** AnimMontage to play each time we fire */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Gameplay)
 	class UAnimMontage* FireAnimation;
+
+
+	UFUNCTION(BlueprintCallable, Category = Gameplay)
+	void SetSanity(float value);
 
 	UFUNCTION(BlueprintImplementableEvent, Category = Movement)
 	void OnMoveForward(float val);
