@@ -5,19 +5,88 @@
 #include "NoEndHouseCharacter.h"
 
 
+const float ATriggerLightFlicker::DELTATIME = 0.01f;
 
 ATriggerLightFlicker::ATriggerLightFlicker()
 {
-	TScriptDelegate<FWeakObjectPtr> delegateFunction;
-	delegateFunction.BindUFunction(this, "CollisionOccured");
+	Sound = CreateDefaultSubobject<UAudioComponent>(TEXT("Sound"));
+	Sound->AttachParent = RootComponent;
+	Sound->bIsMusic = false;
 
-	GetCollisionComponent()->OnComponentBeginOverlap.Add(delegateFunction);
+	GetCollisionComponent()->bGenerateOverlapEvents = true;
+
+	bPlayOnce = true;
+
+	TimeLine = FTimeline();
+
 }
 
-void ATriggerLightFlicker::CollisionOccured(AActor* actor)
+
+void ATriggerLightFlicker::TimelineProgress(float Value)
 {
-	if (actor->IsA(ANoEndHouseCharacter::StaticClass()))
+	if (character)
 	{
-		ANoEndHouseCharacter* character = Cast<ANoEndHouseCharacter>(actor);
+		character->GetFirstPersonCameraComponent()->PostProcessSettings.bOverride_IndirectLightingIntensity = true;
+		character->GetFirstPersonCameraComponent()->PostProcessSettings.IndirectLightingIntensity = Value;
+	}
+
+	for (int i = 0; i < LightComponents.Num(); i++)
+	{
+		LightComponents[i]->SetIntensity(BaseLightIntensities[i] * Value);
 	}
 }
+
+void ATriggerLightFlicker::TickTimeline()
+{
+	if (TimeLine.IsPlaying())
+	{
+		TimeLine.TickTimeline(DELTATIME);
+	}
+	else
+	{
+		if (bPlayOnce)
+		{
+			GetWorldTimerManager().ClearTimer(TimerHandle);
+			Destroy();
+		}
+	}
+}
+
+void ATriggerLightFlicker::BeginPlay()
+{
+	Super::BeginPlay();
+
+
+	if (Curve)
+	{
+		FOnTimelineFloat progressFunction{};
+		progressFunction.BindUFunction(this, "TimelineProgress"); // The function EffectProgress gets called
+		TimeLine.AddInterpFloat(Curve, progressFunction, FName{ TEXT("Effect") });
+	}
+
+	//fetch all lights and save base light intensity
+	for (int i = 0; i < Lights.Num(); i++)
+	{
+		ULightComponent* light = Cast<ULightComponent>(Lights[i]->GetComponentByClass(ULightComponent::StaticClass()));
+		if (!light) continue;
+		LightComponents.Add(light);
+		BaseLightIntensities.Add(light->Intensity);
+	}
+}
+
+void ATriggerLightFlicker::NotifyActorBeginOverlap(AActor* OtherActor)
+{
+	Super::NotifyActorBeginOverlap(OtherActor);
+
+
+	if (OtherActor && (OtherActor != this) && OtherActor->IsA(ANoEndHouseCharacter::StaticClass()))
+	{
+		character = Cast<ANoEndHouseCharacter>(OtherActor);
+		TimeLine.PlayFromStart();
+		GetWorldTimerManager().SetTimer(TimerHandle, this, &ATriggerLightFlicker::TickTimeline, DELTATIME, true, 0.0f);
+		Sound->Play();
+	}
+
+}
+
+
