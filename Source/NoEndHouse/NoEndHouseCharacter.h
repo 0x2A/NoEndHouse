@@ -1,12 +1,13 @@
 // Copyright 1998-2015 Epic Games, Inc. All Rights Reserved.
 #pragma once
 #include "GameFramework/Character.h"
+#include "InventoryInterface.h"
 #include "NoEndHouseCharacter.generated.h"
 
 class UInputComponent;
 
 UCLASS(config=Game)
-class ANoEndHouseCharacter : public ACharacter
+class ANoEndHouseCharacter : public ACharacter, public IInventoryInterface
 {
 	GENERATED_BODY()
 
@@ -28,7 +29,8 @@ class ANoEndHouseCharacter : public ACharacter
 	bool bCameraShakeWalking;
 	bool bCameraShakeWalkingRight;
 
-
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = Gameplay, meta = (AllowPrivateAccess = "true"))
+	TArray<FString> Inventory;
 
 public:
 	ANoEndHouseCharacter();
@@ -98,6 +100,12 @@ public:
 
 
 	void BeginPlay() override;
+
+
+	//IInventoryInterface
+	void AddInventory(FString item);
+	void RemoveInventory(FString item);
+	bool CheckInventory(FString item);
 
 protected:
 	/** Called when this Pawn is possessed. Only called on the server (or in standalone). */

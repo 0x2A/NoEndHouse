@@ -303,3 +303,21 @@ void ANoEndHouseCharacter::SetSanity(float value)
 	FirstPersonCameraComponent->PostProcessSettings.SceneFringeIntensity = ((100.0f - Sanity) / 100.0f) * 5.0f;
 	
 }
+
+void ANoEndHouseCharacter::AddInventory(FString item)
+{
+	Inventory.Add(item);
+}
+
+bool ANoEndHouseCharacter::CheckInventory(FString item)
+{
+	return Inventory.Contains(item);
+}
+
+void ANoEndHouseCharacter::RemoveInventory(FString item)
+{
+	if (Inventory.Contains(item))
+	{
+		Inventory.Remove(item);
+	}
+}
