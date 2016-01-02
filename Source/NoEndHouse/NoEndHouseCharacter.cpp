@@ -309,15 +309,14 @@ void ANoEndHouseCharacter::AddInventory(FString item)
 	Inventory.Add(item);
 }
 
+void ANoEndHouseCharacter::RemoveInventory(FString item)
+{
+	if (CheckInventory(item))
+		Inventory.Remove(item);
+}
+
 bool ANoEndHouseCharacter::CheckInventory(FString item)
 {
 	return Inventory.Contains(item);
 }
 
-void ANoEndHouseCharacter::RemoveInventory(FString item)
-{
-	if (Inventory.Contains(item))
-	{
-		Inventory.Remove(item);
-	}
-}

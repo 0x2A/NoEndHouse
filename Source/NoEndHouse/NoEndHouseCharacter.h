@@ -101,11 +101,9 @@ public:
 
 	void BeginPlay() override;
 
-
-	//IInventoryInterface
-	void AddInventory(FString item);
-	void RemoveInventory(FString item);
-	bool CheckInventory(FString item);
+	void AddInventory(FString item) override;
+	void RemoveInventory(FString item) override;
+	bool CheckInventory(FString item) override;
 
 protected:
 	/** Called when this Pawn is possessed. Only called on the server (or in standalone). */

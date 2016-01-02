@@ -20,8 +20,8 @@ class IInventoryInterface
 
 public:
 
-	void AddInventory(FString item);
-	void RemoveInventory(FString item);
-	bool CheckInventory(FString item);
+	virtual void AddInventory(FString item);
+	virtual void RemoveInventory(FString item);
+	virtual bool CheckInventory(FString item);
 
 };

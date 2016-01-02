@@ -13,3 +13,13 @@ bool IInventoryInterface::CheckInventory(FString item)
 {
 	return false;
 }
+
+void IInventoryInterface::AddInventory(FString item)
+{
+
+}
+
+void IInventoryInterface::RemoveInventory(FString item)
+{
+
+}
