@@ -60,14 +60,6 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Camera)
 	TSubclassOf<UCameraShake> CameraShakeWalk;
 		
-	/** Sound to play each time we fire */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Gameplay)
-	class USoundBase* FireSound;
-
-	/** AnimMontage to play each time we fire */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Gameplay)
-	class UAnimMontage* FireAnimation;
-
 
 	UFUNCTION(BlueprintCallable, Category = Gameplay)
 	void SetSanity(float value);
@@ -90,6 +82,8 @@ public:
 	UFUNCTION(BlueprintNativeEvent, Category = Movement)
 		void StopBlinking();
 
+
+
 	//used to set a blink material from content browser
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Gameplay)
 	UMaterialInterface* BlinkMaterial;
@@ -104,6 +98,45 @@ public:
 	void AddInventory(FString item) override;
 	void RemoveInventory(FString item) override;
 	bool CheckInventory(FString item) override;
+
+
+	//Sound
+
+	UFUNCTION(BlueprintCallable, Category = Sound)
+	void PlayFootstep();
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Sound)
+	class USoundCue* FootstepsWood;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Sound)
+	class USoundCue* FootstepsConcrete;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Sound)
+	class USoundCue* FootstepsDirt;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Sound)
+	class USoundCue* FootstepsGravel;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Sound)
+	class USoundCue* FootstepsTiles;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Sound)
+	class USoundCue* FootstepsWater;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Sound)
+	float FootstepSpeed;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Sound)
+	float FootstepSpeedCrouched;
+
+	bool bFootstepSoundPlaying;
+	bool bWasCrouching;
+	
+	/* Handle to manage the timer */
+	FTimerHandle FootstepTimerHandle;
+
+	void StartPlayFootsteps();
+	void StopPlayFootsteps();
 
 protected:
 	/** Called when this Pawn is possessed. Only called on the server (or in standalone). */

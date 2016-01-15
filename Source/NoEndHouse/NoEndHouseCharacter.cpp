@@ -4,6 +4,8 @@
 #include "NoEndHouseCharacter.h"
 #include "Animation/AnimInstance.h"
 #include "GameFramework/InputSettings.h"
+#include "PhysicalMaterials/PhysicalMaterial.h"
+#include "Sound/SoundCue.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogFPChar, Warning, All);
 
@@ -38,9 +40,11 @@ ANoEndHouseCharacter::ANoEndHouseCharacter()
 
 	//chrouching
 	vCameraLocation = FirstPersonCameraComponent->RelativeLocation;
-	bIsCrouching = false;
+	bIsCrouching = bWasCrouching = false;
 
-
+	FootstepSpeed = 0.47f;
+	FootstepSpeedCrouched = 0.65f;
+	bFootstepSoundPlaying = false;
 	// *** This seems to be still broken in 4.9.2 ***
 	//Initialize camera shaking class
 	/*CameraShake = ConstructObject<UCameraShake>(UCameraShake::StaticClass());
@@ -160,6 +164,9 @@ void ANoEndHouseCharacter::MoveForward(float Value)
 {
 	if (Value != 0.0f)
 	{
+		if (CharacterMovement->IsMovingOnGround() && CharacterMovement->IsWalking())
+			StartPlayFootsteps();
+
 		// add movement in that direction
 		AddMovementInput(GetActorForwardVector(), Value);
 
@@ -180,19 +187,26 @@ void ANoEndHouseCharacter::MoveForward(float Value)
 		}
 	}
 	else
+	{
 		bCameraShakeWalking = false;
+	}
 
 	//only stop if both not enabled
 	if (PlayerController && !bCameraShakeWalking && !bCameraShakeWalkingRight)
 		PlayerController->ClientStopCameraShake(CameraShakeWalk);
 
 	OnMoveForward(Value);
+
+	if (CharacterMovement->Velocity.IsZero() || !CharacterMovement->IsMovingOnGround()) StopPlayFootsteps();
 }
 
 void ANoEndHouseCharacter::MoveRight(float Value)
 {
 	if (Value != 0.0f)
 	{
+		if (CharacterMovement->IsMovingOnGround() && CharacterMovement->IsWalking())
+			StartPlayFootsteps();
+
 		// add movement in that direction
 		AddMovementInput(GetActorRightVector(), Value);
 
@@ -213,9 +227,12 @@ void ANoEndHouseCharacter::MoveRight(float Value)
 		}
 	}
 	else
+	{
 		bCameraShakeWalkingRight = false;
+	}
 
 	OnMoveRight(Value);
+	if (CharacterMovement->Velocity.IsZero() || !CharacterMovement->IsMovingOnGround()) StopPlayFootsteps();
 }
 
 
@@ -318,5 +335,67 @@ void ANoEndHouseCharacter::RemoveInventory(FString item)
 bool ANoEndHouseCharacter::CheckInventory(FString item)
 {
 	return Inventory.Contains(item);
+}
+
+void ANoEndHouseCharacter::PlayFootstep()
+{
+	FVector location = GetActorLocation();
+
+	//Re-initialize hit info
+	FHitResult RV_Hit(ForceInit);
+	FCollisionQueryParams RV_TraceParams = FCollisionQueryParams(FName(TEXT("surface_trace")), true, this);
+	RV_TraceParams.bReturnPhysicalMaterial = true;
+	if (GetWorld()->LineTraceSingleByChannel(RV_Hit, location, location + FVector(0, 0, -500), ECC_Visibility, RV_TraceParams))
+	{
+		if (RV_Hit.PhysMaterial.IsValid())
+		{
+			//lets default to wood footsteps
+			USoundCue* cue = FootstepsWood;
+			switch (RV_Hit.PhysMaterial->SurfaceType)
+			{
+			case SurfaceType1:
+				cue = FootstepsWood;
+				break;
+			case SurfaceType2:
+				cue = FootstepsConcrete;
+				break;
+			case SurfaceType3:
+				cue = FootstepsDirt;
+				break;
+			case SurfaceType4:
+				cue = FootstepsGravel;
+				break;
+			case SurfaceType5:
+				cue = FootstepsTiles;
+				break;
+			case SurfaceType6:
+				cue = FootstepsWater;
+				break;
+			}
+			//Play sound cue at hit location
+			if (cue) UGameplayStatics::PlaySoundAtLocation(this, cue, RV_Hit.Location);
+		}
+	}
+}
+
+
+//TODO: Get rid of this and use animation events instead
+void ANoEndHouseCharacter::StartPlayFootsteps()
+{
+	if (bIsCrouching != bWasCrouching)
+	{
+		bWasCrouching = bIsCrouching;
+		if (bFootstepSoundPlaying)
+			StopPlayFootsteps();
+	}
+	if (!bFootstepSoundPlaying)
+		GetWorld()->GetTimerManager().SetTimer(FootstepTimerHandle, this, &ANoEndHouseCharacter::PlayFootstep, bIsCrouching ? FootstepSpeedCrouched : FootstepSpeed, true, 0.1f);
+	bFootstepSoundPlaying = true;
+}
+
+void ANoEndHouseCharacter::StopPlayFootsteps()
+{
+	bFootstepSoundPlaying = false;
+	GetWorld()->GetTimerManager().ClearTimer(FootstepTimerHandle);
 }
 
