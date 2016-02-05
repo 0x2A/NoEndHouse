@@ -12,6 +12,7 @@ ATriggerLightFlicker::ATriggerLightFlicker()
 	Sound = CreateDefaultSubobject<UAudioComponent>(TEXT("Sound"));
 	Sound->AttachParent = RootComponent;
 	Sound->bIsMusic = false;
+	Sound->bOverrideAttenuation = true;
 
 	GetCollisionComponent()->bGenerateOverlapEvents = true;
 

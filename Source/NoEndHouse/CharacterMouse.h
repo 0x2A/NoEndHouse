@@ -18,6 +18,9 @@ public:
 	UPROPERTY(VisibleDefaultsOnly, Category = Mesh)
 	class UStaticMeshComponent* MouseMesh;
 
+	UPROPERTY(VisibleDefaultsOnly, Category = Mesh)
+	class UAudioComponent* RatSound;
+
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 	

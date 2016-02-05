@@ -36,7 +36,7 @@ ANoEndHouseCharacter::ANoEndHouseCharacter()
 
 	bCameraShakeWalking = bCameraShakeWalkingRight = false;
 
-	CharacterMovement->NavAgentProps.bCanCrouch = true;
+	GetCharacterMovement()->NavAgentProps.bCanCrouch = true;
 
 	//chrouching
 	vCameraLocation = FirstPersonCameraComponent->RelativeLocation;
@@ -164,7 +164,7 @@ void ANoEndHouseCharacter::MoveForward(float Value)
 {
 	if (Value != 0.0f)
 	{
-		if (CharacterMovement->IsMovingOnGround() && CharacterMovement->IsWalking())
+		if (GetCharacterMovement()->IsMovingOnGround() && GetCharacterMovement()->IsWalking())
 			StartPlayFootsteps();
 
 		// add movement in that direction
@@ -173,7 +173,7 @@ void ANoEndHouseCharacter::MoveForward(float Value)
 		//Handle camera shake
 		if (PlayerController)
 		{
-			if (CharacterMovement->IsWalking())
+			if (GetCharacterMovement()->IsWalking())
 			{
 				if (!bCameraShakeWalking)
 				{
@@ -197,14 +197,14 @@ void ANoEndHouseCharacter::MoveForward(float Value)
 
 	OnMoveForward(Value);
 
-	if (CharacterMovement->Velocity.IsZero() || !CharacterMovement->IsMovingOnGround()) StopPlayFootsteps();
+	if (GetCharacterMovement()->Velocity.IsZero() || !GetCharacterMovement()->IsMovingOnGround()) StopPlayFootsteps();
 }
 
 void ANoEndHouseCharacter::MoveRight(float Value)
 {
 	if (Value != 0.0f)
 	{
-		if (CharacterMovement->IsMovingOnGround() && CharacterMovement->IsWalking())
+		if (GetCharacterMovement()->IsMovingOnGround() && GetCharacterMovement()->IsWalking())
 			StartPlayFootsteps();
 
 		// add movement in that direction
@@ -213,7 +213,7 @@ void ANoEndHouseCharacter::MoveRight(float Value)
 		//Handle camera shake
 		if (PlayerController)
 		{
-			if (CharacterMovement->IsWalking())
+			if (GetCharacterMovement()->IsWalking())
 			{
 				if (!bCameraShakeWalkingRight)
 				{
@@ -232,7 +232,7 @@ void ANoEndHouseCharacter::MoveRight(float Value)
 	}
 
 	OnMoveRight(Value);
-	if (CharacterMovement->Velocity.IsZero() || !CharacterMovement->IsMovingOnGround()) StopPlayFootsteps();
+	if (GetCharacterMovement()->Velocity.IsZero() || !GetCharacterMovement()->IsMovingOnGround()) StopPlayFootsteps();
 }
 
 

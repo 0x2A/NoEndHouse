@@ -17,6 +17,9 @@ ACharacterMouse::ACharacterMouse()
 	MouseMesh->bCastDynamicShadow = true;
 	MouseMesh->CastShadow = true;
 
+	RatSound = CreateDefaultSubobject<UAudioComponent>(TEXT("RatSound"));
+	RatSound->bAutoActivate = false;
+
 	bUseControllerRotationYaw = false;
 
 	ShouldMove = true;
@@ -27,24 +30,27 @@ void ACharacterMouse::BeginPlay()
 {
 	Super::BeginPlay();
 	
+	if (ShouldMove)
+		RatSound->Play();
 }
 
 // Called every frame
 void ACharacterMouse::Tick( float DeltaTime )
 {
 	Super::Tick( DeltaTime );
-
 }
 
 void ACharacterMouse::DisableMovement()
 {
 	Controller->StopMovement();
 	ShouldMove = false;
+	RatSound->Stop();
 }
 
 void ACharacterMouse::EnableMovement()
 {
 	ShouldMove = true;
+	RatSound->Play();
 }
 
 
