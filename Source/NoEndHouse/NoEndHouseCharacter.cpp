@@ -5,6 +5,7 @@
 #include "Animation/AnimInstance.h"
 #include "GameFramework/InputSettings.h"
 #include "PhysicalMaterials/PhysicalMaterial.h"
+#include "PhysicsEngine/PhysicsHandleComponent.h"
 #include "Sound/SoundCue.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogFPChar, Warning, All);
@@ -45,6 +46,9 @@ ANoEndHouseCharacter::ANoEndHouseCharacter()
 	FootstepSpeed = 0.47f;
 	FootstepSpeedCrouched = 0.65f;
 	bFootstepSoundPlaying = false;
+
+	MaxObservationDistance = 180;
+	MaxObservationMass = 100;
 	// *** This seems to be still broken in 4.9.2 ***
 	//Initialize camera shaking class
 	/*CameraShake = ConstructObject<UCameraShake>(UCameraShake::StaticClass());
@@ -69,6 +73,8 @@ ANoEndHouseCharacter::ANoEndHouseCharacter()
 	CameraShake->LocOscillation.Z.Frequency = 20.0f;
 	CameraShake->LocOscillation.Z.InitialOffset = EInitialOscillatorOffset::EOO_OffsetRandom;*/
 
+	bPhysicsHandleActive = false;
+
 	PlayerController = nullptr;
 	
 	Sanity = 100.0f;
@@ -92,8 +98,17 @@ void ANoEndHouseCharacter::SetupPlayerInputComponent(class UInputComponent* Inpu
 	InputComponent->BindAction("Blink", IE_Pressed, this, &ANoEndHouseCharacter::Blink);
 	InputComponent->BindAction("Blink", IE_Released, this, &ANoEndHouseCharacter::StopBlinking);
 
+	InputComponent->BindAction("Use", IE_Pressed, this, &ANoEndHouseCharacter::Use);
+	InputComponent->BindAction("Use", IE_Released, this, &ANoEndHouseCharacter::EndUse);
+
+	InputComponent->BindAction("ObjectInteraction", IE_Pressed, this, &ANoEndHouseCharacter::BeginObjectInteraction);
+	InputComponent->BindAction("ObjectInteraction", IE_Released, this, &ANoEndHouseCharacter::EndObjectInteraction);
+	
+
 	InputComponent->BindAxis("MoveForward", this, &ANoEndHouseCharacter::MoveForward);
 	InputComponent->BindAxis("MoveRight", this, &ANoEndHouseCharacter::MoveRight);
+
+	InputComponent->BindAxis("ObservationDistance", this, &ANoEndHouseCharacter::SetObservationDistance);
 	
 	// We have 2 versions of the rotation bindings to handle different kinds of devices differently
 	// "turn" handles devices that provide an absolute delta, such as a mouse.
@@ -397,5 +412,115 @@ void ANoEndHouseCharacter::StopPlayFootsteps()
 {
 	bFootstepSoundPlaying = false;
 	GetWorld()->GetTimerManager().ClearTimer(FootstepTimerHandle);
+}
+
+void ANoEndHouseCharacter::Use()
+{
+	StartObserving();
+}
+
+void ANoEndHouseCharacter::EndUse()
+{
+	EndObserving();
+}
+
+void ANoEndHouseCharacter::StartObserving()
+{
+	bPhysicsHandleActive = true;
+
+	FHitResult hitResult;
+	FVector camLocation = FirstPersonCameraComponent->GetComponentLocation();
+	FVector targetLoc = FirstPersonCameraComponent->GetForwardVector() * MaxObservationDistance;
+
+	if (GetWorld()->LineTraceSingleByChannel(hitResult, camLocation, camLocation + targetLoc, COLLISION_OBSERVABLE,
+		FCollisionQueryParams("ObserveTrace", false, this)))
+	{
+		HitResultObservObject = hitResult.Actor;
+		if (!HitResultObservObject.IsValid() || !HitResultObservObject->GetClass()->ImplementsInterface(UObservableObject::StaticClass()))
+		{
+			HitResultObservObject.Reset();
+			return;
+		}
+
+		HitResultObservComponent = hitResult.Component;
+
+		ObservingObjectDistance = (GetActorLocation() - hitResult.Location).Size();
+		if (HitResultObservComponent->GetMass() < MaxObservationMass)
+		{
+			HitResultObservPhysHandle = IObservableObject::Execute_GetPhysicsHandle(HitResultObservObject.Get());
+			HitResultObservPhysHandle->GrabComponent(HitResultObservComponent.Get(), hitResult.BoneName, hitResult.ImpactPoint, false);
+			HitResultObservComponent->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
+		}
+
+		IObservableObject::Execute_BeginObservation(HitResultObservObject.Get());
+	}
+	//else
+		//HitResultObservObject.Reset();
+}
+
+void ANoEndHouseCharacter::EndObserving()
+{
+	if (!bPhysicsHandleActive) return;
+	bPhysicsHandleActive = false;
+	
+	if (!HitResultObservObject.IsValid()) return;
+	if (!HitResultObservObject->GetClass()->ImplementsInterface(UObservableObject::StaticClass())) return;
+
+	HitResultObservPhysHandle->ReleaseComponent();
+	HitResultObservPhysHandle = nullptr;
+
+	if (!HitResultObservComponent.IsValid()) return;
+	HitResultObservComponent->WakeRigidBody();
+
+	if (bIsHeld)
+	{
+		FVector camLocation = FirstPersonCameraComponent->GetForwardVector();
+		camLocation *= MaxObservationMass * 300.0f;
+		HitResultObservComponent->AddImpulse(camLocation);
+	}
+	HitResultObservComponent->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block);
+	IObservableObject::Execute_EndObservation(HitResultObservObject.Get());
+	HitResultObservObject.Reset();
+}
+
+void ANoEndHouseCharacter::BeginObjectInteraction()
+{
+	if (bPhysicsHandleActive)
+	{
+		bIsHeld = true;
+		EndObserving();
+	}
+}
+
+void ANoEndHouseCharacter::EndObjectInteraction()
+{
+	bIsHeld = false;
+}
+
+void ANoEndHouseCharacter::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+
+	if (bPhysicsHandleActive)
+	{
+		if (HitResultObservObject.IsValid() && HitResultObservPhysHandle)
+		{
+			FVector forwardRot = FRotationMatrix(GetControlRotation()).GetScaledAxis(EAxis::X);
+			forwardRot *= ObservingObjectDistance;
+			FVector handleLocation = FirstPersonCameraComponent->GetComponentLocation() + forwardRot;
+			HitResultObservPhysHandle->SetTargetLocationAndRotation(handleLocation, GetControlRotation());
+		}
+		if (HitResultObservObject.IsValid())
+		{
+			if (MaxObservationDistance < (Mesh->GetComponentLocation() - HitResultObservComponent->GetComponentLocation()).Size())
+				EndObserving();
+		}
+	}
+}
+
+void ANoEndHouseCharacter::SetObservationDistance(float val)
+{
+	ObservingObjectDistance += val*5.0f;
+	ObservingObjectDistance = FMath::Clamp(ObservingObjectDistance, 25.0f, MaxObservationDistance - 10.0f);
 }
 

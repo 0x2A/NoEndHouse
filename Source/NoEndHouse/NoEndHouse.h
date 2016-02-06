@@ -5,5 +5,6 @@
 
 #include "EngineMinimal.h"
 
+#define COLLISION_OBSERVABLE		ECC_GameTraceChannel1
 
 #endif

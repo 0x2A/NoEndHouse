@@ -3,6 +3,7 @@
 #pragma once
 
 #include "GameFramework/Character.h"
+#include "ObservableObject.h"
 #include "CharacterMouse.generated.h"
 
 UCLASS()

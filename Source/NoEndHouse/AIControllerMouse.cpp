@@ -19,6 +19,7 @@ void AAIControllerMouse::Tick(float DeltaTime)
 
 	if (!CharacterMouse->ShouldMove && bMoving)
 	{
+		bMoving = false;
 		StopMovement();
 		return;
 	}

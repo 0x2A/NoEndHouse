@@ -2,6 +2,7 @@
 #pragma once
 #include "GameFramework/Character.h"
 #include "InventoryInterface.h"
+#include "ObservableObject.h"
 #include "NoEndHouseCharacter.generated.h"
 
 class UInputComponent;
@@ -60,6 +61,11 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Camera)
 	TSubclassOf<UCameraShake> CameraShakeWalk;
 		
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Observation)
+	float MaxObservationDistance;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Observation)
+	float MaxObservationMass;
 
 	UFUNCTION(BlueprintCallable, Category = Gameplay)
 	void SetSanity(float value);
@@ -82,7 +88,7 @@ public:
 	UFUNCTION(BlueprintNativeEvent, Category = Movement)
 		void StopBlinking();
 
-
+	void Tick(float DeltaSeconds) override;
 
 	//used to set a blink material from content browser
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Gameplay)
@@ -148,6 +154,11 @@ protected:
 	/** Handles stafing movement, left and right */
 	void MoveRight(float Val);
 
+	void SetObservationDistance(float val);
+
+	void Use();
+
+	void EndUse();
 
 	/**
 	 * Called via input to turn at a given rate.
@@ -186,6 +197,20 @@ protected:
 	 * @returns true if touch controls were enabled.
 	 */
 	bool EnableTouchscreenMovement(UInputComponent* InputComponent);
+
+	void BeginObjectInteraction();
+	void EndObjectInteraction();
+
+	void StartObserving();
+	void EndObserving();
+
+	bool bPhysicsHandleActive;
+	bool bIsHeld;
+
+	TWeakObjectPtr<class AActor> HitResultObservObject;
+	TWeakObjectPtr<class UPrimitiveComponent> HitResultObservComponent;
+	UPhysicsHandleComponent* HitResultObservPhysHandle;
+	float ObservingObjectDistance;
 
 public:
 	/** Returns Mesh1P subobject **/
