@@ -6,6 +6,6 @@ public class NoEndHouse : ModuleRules
 {
 	public NoEndHouse(TargetInfo Target)
 	{
-		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "MoviePlayer" });
+		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "MoviePlayer", "RHI"});
 	}
 }
