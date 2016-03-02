@@ -120,3 +120,133 @@ void UGameSettingsFunctionLib::SetSoundVolume(USoundClass* soundClassObject, flo
 	soundClassObject->Properties.Volume = newVolume;
 }
 
+void UGameSettingsFunctionLib::GetAllActionKeyBindings(TArray<FInput>& Bindings)
+{
+	Bindings.Empty();
+
+	const UInputSettings* Settings = GetDefault<UInputSettings>();
+	if (!Settings) return;
+
+	const TArray<FInputActionKeyMapping>& Actions = Settings->ActionMappings;
+	for (const FInputActionKeyMapping& Each : Actions)
+	{
+		if (!Each.Key.IsGamepadKey())
+			Bindings.Add(FInput(Each));
+	}
+}
+
+FInput UGameSettingsFunctionLib::GetInputFromKeyEvent(const FKeyEvent& KeyEvent)
+{
+	FInput fInput;
+	fInput.Key = KeyEvent.GetKey();
+	fInput.KeyAsString = fInput.Key.GetDisplayName().ToString();
+
+	fInput.bAlt = KeyEvent.IsAltDown();
+	fInput.bCtrl = KeyEvent.IsControlDown();
+	fInput.bShift = KeyEvent.IsShiftDown();
+	fInput.bCmd = KeyEvent.IsCommandDown();
+
+	return fInput;
+}
+
+bool UGameSettingsFunctionLib::ReBindActionKey(FInput Original, FInput NewBinding)
+{
+	UInputSettings* Settings = const_cast<UInputSettings*>(GetDefault<UInputSettings>());
+	if (!Settings) return false;
+
+	TArray<FInputActionKeyMapping>& Actions = Settings->ActionMappings;
+
+	//~~~
+
+	bool Found = false;
+	for (FInputActionKeyMapping& Each : Actions)
+	{
+		//Search by original
+		if (Each.ActionName.ToString() == Original.ActionName &&
+			Each.Key == Original.Key
+			){
+			//Update to new!
+			UpdateActionMapping(Each, NewBinding);
+			Found = true;
+			break;
+		}
+	}
+
+	if (Found)
+	{
+		//SAVES TO DISK
+		const_cast<UInputSettings*>(Settings)->SaveKeyMappings();
+
+		//REBUILDS INPUT, creates modified config in Saved/Config/Windows/Input.ini
+		for (TObjectIterator<UPlayerInput> It; It; ++It)
+		{
+			It->ForceRebuildingKeyMaps(true);
+		}
+	}
+	return Found;
+}
+
+void UGameSettingsFunctionLib::GetAllAxisKeyBindings(TArray<FInputAxis>& Bindings)
+{
+	Bindings.Empty();
+
+	const UInputSettings* Settings = GetDefault<UInputSettings>();
+	if (!Settings) return;
+
+	const TArray<FInputAxisKeyMapping>& Axi = Settings->AxisMappings;
+
+	for (const FInputAxisKeyMapping& Each : Axi)
+	{
+		if(!(Each.Key.IsGamepadKey() ||Each.Key.IsMouseButton()))
+			Bindings.Add(FInputAxis(Each));
+	}
+}
+
+FInputAxis UGameSettingsFunctionLib::GetInputAxisFromKeyEvent(const FKeyEvent& KeyEvent)
+{
+	FInputAxis VInput;
+
+	VInput.Key = KeyEvent.GetKey();
+	VInput.KeyAsString = VInput.Key.GetDisplayName().ToString();
+	VInput.Scale = 1;
+
+	return VInput;
+}
+
+bool UGameSettingsFunctionLib::ReBindAxisKey(FInputAxis Original, FInputAxis NewBinding)
+{
+	UInputSettings* Settings = const_cast<UInputSettings*>(GetDefault<UInputSettings>());
+	if (!Settings) return false;
+
+	TArray<FInputAxisKeyMapping>& Axi = Settings->AxisMappings;
+
+	//~~~
+
+	bool Found = false;
+	for (FInputAxisKeyMapping& Each : Axi)
+	{
+		//Search by original
+		if (Each.AxisName.ToString() == Original.AxisName &&
+			Each.Key == Original.Key)
+		{
+			//Update to new!
+			UpdateAxisMapping(Each, NewBinding);
+			Found = true;
+			break;
+		}
+	}
+
+	if (Found)
+	{
+		//SAVES TO DISK
+		const_cast<UInputSettings*>(Settings)->SaveKeyMappings();
+
+		//REBUILDS INPUT, creates modified config in Saved/Config/Windows/Input.ini
+		for (TObjectIterator<UPlayerInput> It; It; ++It)
+		{
+			It->ForceRebuildingKeyMaps(true);
+		}
+	}
+	return Found;
+}
+

@@ -4,6 +4,8 @@
 #define __NOENDHOUSE_H__
 
 #include "EngineMinimal.h"
+#include "NEHSaveGame.h"
+#include "Kismet/GameplayStatics.h"
 
 #define COLLISION_OBSERVABLE		ECC_GameTraceChannel1
 
