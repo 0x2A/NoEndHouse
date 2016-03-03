@@ -36,7 +36,7 @@ FGraphicSettings UGameSettingsFunctionLib::GetUserGraphicSettings()
 		return settings;
 	}
 	settings.Valid = true;
-	auto userSettings = GEngine->GameUserSettings;
+	auto userSettings = GEngine->GetGameUserSettings();
 	auto resolution = userSettings->GetScreenResolution();
 	settings.Resolution.Width = resolution.X;
 	settings.Resolution.Height = resolution.Y;
@@ -66,7 +66,7 @@ void UGameSettingsFunctionLib::ApplyUserGraphicSettings(FGraphicSettings setting
 
 	if (!settings.Valid) return;
 
-	auto userSettings = GEngine->GameUserSettings;
+	auto userSettings = GEngine->GetGameUserSettings();
 	EWindowMode::Type mode;
 	switch (settings.WindowMode)
 	{
@@ -96,15 +96,15 @@ void UGameSettingsFunctionLib::ApplyUserGraphicSettings(FGraphicSettings setting
 void UGameSettingsFunctionLib::ApplyUserAudioQuality(int32 quality)
 {
 	if (GEngine == nullptr) return;
-	GEngine->GameUserSettings->SetAudioQualityLevel(quality);
+	GEngine->GetGameUserSettings()->SetAudioQualityLevel(quality);
 	Scalability::SaveState(GGameUserSettingsIni);
-	GEngine->GameUserSettings->ApplySettings();
+	GEngine->GetGameUserSettings()->ApplySettings();
 }
 
 int32 UGameSettingsFunctionLib::GetUserAudioQuality()
 {
 	if (GEngine == nullptr) return 2;
-	return GEngine->GameUserSettings->GetAudioQualityLevel();
+	return GEngine->GetGameUserSettings()->GetAudioQualityLevel();
 }
 
 float UGameSettingsFunctionLib::GetSoundVolume(USoundClass* soundClassObject)
@@ -227,7 +227,7 @@ bool UGameSettingsFunctionLib::ReBindAxisKey(FInputAxis Original, FInputAxis New
 	{
 		//Search by original
 		if (Each.AxisName.ToString() == Original.AxisName &&
-			Each.Key == Original.Key)
+			Each.Key == Original.Key && Each.Scale == Original.Scale)
 		{
 			//Update to new!
 			UpdateAxisMapping(Each, NewBinding);
@@ -248,5 +248,42 @@ bool UGameSettingsFunctionLib::ReBindAxisKey(FInputAxis Original, FInputAxis New
 		}
 	}
 	return Found;
+}
+
+TArray<FInputAxis> UGameSettingsFunctionLib::GetInputAxisFromAxisName(const FString& AxisName, float scale)
+{
+	TArray<FInputAxis> entries;
+
+	const UInputSettings* Settings = GetDefault<UInputSettings>();
+	if (!Settings) return entries;
+
+	const TArray<FInputAxisKeyMapping>& Axi = Settings->AxisMappings;
+
+	for (const FInputAxisKeyMapping& Each : Axi)
+	{
+		if (!Each.Key.IsGamepadKey() && Each.AxisName.ToString().Equals(AxisName, ESearchCase::IgnoreCase))
+		{
+			if (Each.Scale == scale)
+				entries.Add(FInputAxis(Each));
+		}
+	}
+
+	return entries;
+}
+
+TArray<FInput> UGameSettingsFunctionLib::GetInputsFromActionName(const FString& actionName)
+{
+	TArray<FInput> entries;
+
+	const UInputSettings* Settings = GetDefault<UInputSettings>();
+	if (!Settings) return entries;
+
+	const TArray<FInputActionKeyMapping>& Actions = Settings->ActionMappings;
+	for (const FInputActionKeyMapping& Each : Actions)
+	{
+		if (!Each.Key.IsGamepadKey() && Each.ActionName.ToString().Equals(actionName, ESearchCase::IgnoreCase))
+			entries.Add(FInput(Each));
+	}
+	return entries;
 }
 

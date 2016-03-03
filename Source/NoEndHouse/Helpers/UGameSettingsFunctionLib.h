@@ -195,6 +195,12 @@ public:
 		static FInput GetInputFromKeyEvent(const FKeyEvent& KeyEvent);
 
 	UFUNCTION(BlueprintPure, Category = "GameSettings|Input")
+		static TArray<FInput> GetInputsFromActionName(const FString& actionName);
+
+	UFUNCTION(BlueprintPure, Category = "GameSettings|Input")
+		static TArray<FInputAxis> GetInputAxisFromAxisName(const FString& AxisName, float scale);
+
+	UFUNCTION(BlueprintPure, Category = "GameSettings|Input")
 		static FInputAxis GetInputAxisFromKeyEvent(const FKeyEvent& KeyEvent);
 
 	UFUNCTION(BlueprintCallable, Category = "GameSettings|Input")
