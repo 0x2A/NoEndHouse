@@ -82,11 +82,13 @@ public:
 	UFUNCTION(BlueprintNativeEvent, Category = Movement)
 	void StopCrouching();
 
-	UFUNCTION(BlueprintNativeEvent, Category = Movement)
-		void Blink();
+
 
 	UFUNCTION(BlueprintNativeEvent, Category = Movement)
-		void StopBlinking();
+		void OnBlink();
+
+	UFUNCTION(BlueprintNativeEvent, Category = Movement)
+		void OnEndBlinking(const float blinkTime);
 
 	void Tick(float DeltaSeconds) override;
 
@@ -97,6 +99,8 @@ public:
 	//Used to hold a material instance so we can modify its properties
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Gameplay)
 	class UMaterialInstanceDynamic* BlinkMaterialInstance;
+
+
 
 
 	void BeginPlay() override;
@@ -145,6 +149,10 @@ public:
 	void StopPlayFootsteps();
 
 protected:
+
+	void Blink();
+	void StopBlinking();
+
 	/** Called when this Pawn is possessed. Only called on the server (or in standalone). */
 	void PossessedBy(AController* NewController) override;
 
@@ -184,6 +192,9 @@ protected:
 	void EndTouch(const ETouchIndex::Type FingerIndex, const FVector Location);
 	void TouchUpdate(const ETouchIndex::Type FingerIndex, const FVector Location);
 	TouchData	TouchItem;
+
+	float fBeginBlinkSeconds;
+	float fBlinkSeconds;
 	
 protected:
 	// APawn interface

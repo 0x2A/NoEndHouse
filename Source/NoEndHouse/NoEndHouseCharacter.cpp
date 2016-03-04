@@ -301,13 +301,13 @@ void ANoEndHouseCharacter::PossessedBy(AController* NewController)
 	}
 }
 
-void ANoEndHouseCharacter::Blink_Implementation()
+void ANoEndHouseCharacter::OnBlink_Implementation()
 {
 	if (!BlinkMaterialInstance) return;
 	BlinkMaterialInstance->SetScalarParameterValue("Value", 0.0f);
 }
 
-void ANoEndHouseCharacter::StopBlinking_Implementation()
+void ANoEndHouseCharacter::OnEndBlinking_Implementation(const float blinkTime)
 {
 	if (!BlinkMaterialInstance) return;
 	BlinkMaterialInstance->SetScalarParameterValue("Value", 1.0f);
@@ -522,5 +522,17 @@ void ANoEndHouseCharacter::SetObservationDistance(float val)
 {
 	ObservingObjectDistance += val*5.0f;
 	ObservingObjectDistance = FMath::Clamp(ObservingObjectDistance, 25.0f, MaxObservationDistance - 10.0f);
+}
+
+void ANoEndHouseCharacter::Blink()
+{
+	fBeginBlinkSeconds = GetWorld()->GetTimeSeconds();
+	OnBlink();
+}
+
+void ANoEndHouseCharacter::StopBlinking()
+{
+	fBlinkSeconds = GetWorld()->GetTimeSeconds() - fBeginBlinkSeconds;
+	OnEndBlinking(fBlinkSeconds);
 }
 
