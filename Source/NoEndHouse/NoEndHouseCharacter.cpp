@@ -65,7 +65,7 @@ ANoEndHouseCharacter::ANoEndHouseCharacter()
 	CameraShake->RotOscillation.Yaw.InitialOffset = EInitialOscillatorOffset::EOO_OffsetRandom;
 
 	CameraShake->RotOscillation.Roll.Amplitude = 1.0f;
-	CameraShake->RotOscillation.Roll.Frequency = 9.0f;
+	CameraShake->RotOscillation.Roll.Frequency = 9.0f;<
 	CameraShake->RotOscillation.Roll.InitialOffset = EInitialOscillatorOffset::EOO_OffsetRandom;
 
 	CameraShake->LocOscillation.Y.Amplitude = 0.0f;
@@ -79,6 +79,7 @@ ANoEndHouseCharacter::ANoEndHouseCharacter()
 	
 	Sanity = 100.0f;
 	FirstPersonCameraComponent->PostProcessSettings.bOverride_SceneFringeIntensity = true;
+	FirstPersonCameraComponent->PostProcessSettings.bOverride_VignetteIntensity = true;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -333,6 +334,7 @@ void ANoEndHouseCharacter::SetSanity(float value)
 {
 	Sanity = FMath::Clamp(value, 0.0f, 100.0f);
 	FirstPersonCameraComponent->PostProcessSettings.SceneFringeIntensity = ((100.0f - Sanity) / 100.0f) * 5.0f;
+	FirstPersonCameraComponent->PostProcessSettings.VignetteIntensity = ((100.0f - Sanity) / 100.0f) * 2.0f;
 	
 }
 
