@@ -49,6 +49,8 @@ ANoEndHouseCharacter::ANoEndHouseCharacter()
 
 	MaxObservationDistance = 180;
 	MaxObservationMass = 100;
+	bRotateHeldObject = false;
+	ObjectObservationRotationSpeed = 12.0f;
 	// *** This seems to be still broken in 4.9.2 ***
 	//Initialize camera shaking class
 	/*CameraShake = ConstructObject<UCameraShake>(UCameraShake::StaticClass());
@@ -105,6 +107,8 @@ void ANoEndHouseCharacter::SetupPlayerInputComponent(class UInputComponent* Inpu
 	InputComponent->BindAction("ObjectInteraction", IE_Pressed, this, &ANoEndHouseCharacter::BeginObjectInteraction);
 	InputComponent->BindAction("ObjectInteraction", IE_Released, this, &ANoEndHouseCharacter::EndObjectInteraction);
 	
+	InputComponent->BindAction("Zoom", IE_Pressed, this, &ANoEndHouseCharacter::BeginZoom);
+	InputComponent->BindAction("Zoom", IE_Released, this, &ANoEndHouseCharacter::EndZoom);
 
 	InputComponent->BindAxis("MoveForward", this, &ANoEndHouseCharacter::MoveForward);
 	InputComponent->BindAxis("MoveRight", this, &ANoEndHouseCharacter::MoveRight);
@@ -275,6 +279,7 @@ void ANoEndHouseCharacter::LookUpAtRate(float Rate)
 {
 	// calculate delta for this frame from the rate information
 	AddControllerPitchInput(Rate * BaseLookUpRate * GetWorld()->GetDeltaSeconds());
+	
 }
 
 bool ANoEndHouseCharacter::EnableTouchscreenMovement(class UInputComponent* InputComponent)
@@ -287,6 +292,8 @@ bool ANoEndHouseCharacter::EnableTouchscreenMovement(class UInputComponent* Inpu
 		InputComponent->BindTouch(EInputEvent::IE_Released, this, &ANoEndHouseCharacter::EndTouch);
 		InputComponent->BindTouch(EInputEvent::IE_Repeat, this, &ANoEndHouseCharacter::TouchUpdate);
 	}
+	
+	
 	return bResult;
 }
 
@@ -433,6 +440,7 @@ void ANoEndHouseCharacter::StartObserving()
 	FHitResult hitResult;
 	FVector camLocation = FirstPersonCameraComponent->GetComponentLocation();
 	FVector targetLoc = FirstPersonCameraComponent->GetForwardVector() * MaxObservationDistance;
+	obsObjRotationOffset = FRotator();
 
 	if (GetWorld()->LineTraceSingleByChannel(hitResult, camLocation, camLocation + targetLoc, COLLISION_OBSERVABLE,
 		FCollisionQueryParams("ObserveTrace", false, this)))
@@ -450,11 +458,19 @@ void ANoEndHouseCharacter::StartObserving()
 		if (HitResultObservComponent->GetMass() < MaxObservationMass)
 		{
 			HitResultObservPhysHandle = IObservableObject::Execute_GetPhysicsHandle(HitResultObservObject.Get());
-			HitResultObservPhysHandle->GrabComponent(HitResultObservComponent.Get(), hitResult.BoneName, hitResult.ImpactPoint, false);
+
+			//hint: the last bool is important, it prevents the object from jiggle around!
+			//This cost us hours to figure out how to prevent the jiggle -.-
+			HitResultObservPhysHandle->GrabComponent(HitResultObservComponent.Get(), hitResult.BoneName, hitResult.ImpactPoint, true);
+			
+			//dont collide with ourself and other pawns
 			HitResultObservComponent->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
+
+			//we dont want to turn the object itself down again, because of its mass point, we want to rotate it by ourselves
+			HitResultObservComponent->SetEnableGravity(false);
+			IObservableObject::Execute_BeginObservation(HitResultObservObject.Get());
 		}
 
-		IObservableObject::Execute_BeginObservation(HitResultObservObject.Get());
 	}
 	//else
 		//HitResultObservObject.Reset();
@@ -473,6 +489,7 @@ void ANoEndHouseCharacter::EndObserving()
 
 	if (!HitResultObservComponent.IsValid()) return;
 	HitResultObservComponent->WakeRigidBody();
+	HitResultObservComponent->SetEnableGravity(true);
 
 	if (bIsHeld)
 	{
@@ -482,12 +499,14 @@ void ANoEndHouseCharacter::EndObserving()
 	}
 	HitResultObservComponent->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block);
 	IObservableObject::Execute_EndObservation(HitResultObservObject.Get());
+
+	EndRotateObservedObject();
 	HitResultObservObject.Reset();
 }
 
 void ANoEndHouseCharacter::BeginObjectInteraction()
 {
-	if (bPhysicsHandleActive)
+	if (bPhysicsHandleActive && !bRotateHeldObject)
 	{
 		bIsHeld = true;
 		EndObserving();
@@ -510,7 +529,20 @@ void ANoEndHouseCharacter::Tick(float DeltaSeconds)
 			FVector forwardRot = FRotationMatrix(GetControlRotation()).GetScaledAxis(EAxis::X);
 			forwardRot *= ObservingObjectDistance;
 			FVector handleLocation = FirstPersonCameraComponent->GetComponentLocation() + forwardRot;
-			HitResultObservPhysHandle->SetTargetLocationAndRotation(handleLocation, GetControlRotation());
+
+			if (bRotateHeldObject)
+			{
+				float dX, dY;
+				
+				//rotate the object depending on view direction, not local direction
+				PlayerController->GetInputMouseDelta(dX, dY);
+				FQuat AQuat = FQuat(obsObjRotationOffset);
+				FQuat BQuat = FQuat(FRotator(-dY*ObjectObservationRotationSpeed,-dX*ObjectObservationRotationSpeed,0));
+				obsObjRotationOffset = FRotator(BQuat*AQuat);
+				
+			}
+			HitResultObservPhysHandle->SetTargetLocationAndRotation(handleLocation, GetControlRotation() + obsObjRotationOffset);
+			
 		}
 		if (HitResultObservObject.IsValid())
 		{
@@ -522,7 +554,7 @@ void ANoEndHouseCharacter::Tick(float DeltaSeconds)
 
 void ANoEndHouseCharacter::SetObservationDistance(float val)
 {
-	ObservingObjectDistance += val*5.0f;
+	ObservingObjectDistance -= val*5.0f;
 	ObservingObjectDistance = FMath::Clamp(ObservingObjectDistance, 25.0f, MaxObservationDistance - 10.0f);
 }
 
@@ -536,5 +568,45 @@ void ANoEndHouseCharacter::StopBlinking()
 {
 	fBlinkSeconds = GetWorld()->GetTimeSeconds() - fBeginBlinkSeconds;
 	OnEndBlinking(fBlinkSeconds);
+}
+
+void ANoEndHouseCharacter::BeginZoom()
+{
+	if (bPhysicsHandleActive)
+	{
+		BeginRotateObservedObject();
+		return;
+	}
+
+	//TODO
+}
+
+void ANoEndHouseCharacter::BeginRotateObservedObject()
+{
+	bRotateHeldObject = true;
+
+	//disable camera rotation, so that we can rotate the observed object with the mouse
+	PlayerController->InputPitchScale = 0;
+	PlayerController->InputYawScale = 0;
+}
+
+void ANoEndHouseCharacter::EndZoom()
+{
+	if (bPhysicsHandleActive)
+	{
+		EndRotateObservedObject();
+		return;
+	}
+
+	//TODO
+}
+
+void ANoEndHouseCharacter::EndRotateObservedObject()
+{
+	bRotateHeldObject = false;
+
+	//re-enable camera rotation
+	PlayerController->InputPitchScale = -1.75f; //seems to be the default values
+	PlayerController->InputYawScale = 2.5f;
 }
 
