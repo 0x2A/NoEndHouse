@@ -3,6 +3,8 @@
 #include "NoEndHouse.h"
 #include "AIControllerMouse.h"
 #include "CharacterMouse.h"
+#include "Engine/World.h"
+#include "Engine/Level.h"
 
 
 AAIControllerMouse::AAIControllerMouse()
@@ -40,8 +42,24 @@ void AAIControllerMouse::OnMoveCompleted(FAIRequestID RequestID, EPathFollowingR
 {
 	Super::OnMoveCompleted(RequestID, Result);
 
-	if (CharacterMouse->ShouldMove)
-		MoveToRandomLocation();
+	switch (Result)
+	{
+	case EPathFollowingResult::Blocked:
+	case EPathFollowingResult::Success:
+		if (CharacterMouse->ShouldMove)
+			MoveToRandomLocation();
+		break;
+	case EPathFollowingResult::OffPath:
+		break;
+	case EPathFollowingResult::Aborted:
+		bMoving = false;
+		break;
+	case EPathFollowingResult::Skipped:
+		break;
+	case EPathFollowingResult::Invalid:
+		bMoving = false;
+		break;
+	}
 }
 
 void AAIControllerMouse::MoveToRandomLocation()

@@ -18,13 +18,22 @@ public:
 	ANEHGameState();
 	
 	UFUNCTION(BlueprintCallable, Category = "Savegame")
-	void SaveGame();
+	bool SaveGame();
 
 	UFUNCTION(BlueprintCallable, Category = "Savegame")
 	UNEHSaveGame* LoadGame();
 
+	UFUNCTION(BlueprintCallable, Category = "Savegame")
+		bool HasSaveGame();
+
+	UFUNCTION(BlueprintCallable, Category = "Savegame")
+		void DeleteSaveGame();
+
+	UPROPERTY(BlueprintReadOnly, Category = "Savegame")
+	UNEHSaveGame* currentSaveGame;
 
 private:
 
-	UNEHSaveGame* currentSaveGame;
+	void LoadSaveGame(bool createifNotPresent = false);
+
 };

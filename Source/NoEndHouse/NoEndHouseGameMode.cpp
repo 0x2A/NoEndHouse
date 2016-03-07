@@ -4,6 +4,7 @@
 #include "NoEndHouseGameMode.h"
 #include "NoEndHouseHUD.h"
 #include "NoEndHouseCharacter.h"
+#include "NEHGameState.h"
 
 ANoEndHouseGameMode::ANoEndHouseGameMode()
 	: Super()
@@ -14,4 +15,5 @@ ANoEndHouseGameMode::ANoEndHouseGameMode()
 
 	// use our custom HUD class
 	HUDClass = ANoEndHouseHUD::StaticClass();
+	GameStateClass = ANEHGameState::StaticClass();
 }

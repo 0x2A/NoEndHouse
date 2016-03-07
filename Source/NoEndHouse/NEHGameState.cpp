@@ -2,22 +2,64 @@
 
 #include "NoEndHouse.h"
 #include "NEHGameState.h"
-
-
-
+#include "Engine/Level.h"
+#include "NoEndHouseCharacter.h"
 
 
 ANEHGameState::ANEHGameState()
 {
-	currentSaveGame = nullptr;
+	LoadSaveGame(false);
 }
 
-void ANEHGameState::SaveGame()
+bool ANEHGameState::SaveGame()
 {
+	//we first need to check if we have a valid player character. Otherwise
+	//there could be a save game call without a player character being chreated
+	//resulting in an invalid player position saved
+	auto tchar = GetWorld()->GetFirstPlayerController()->GetCharacter();
+	ANoEndHouseCharacter* character = Cast<ANoEndHouseCharacter>(tchar);
+	if (character)
+	{
+		if (!currentSaveGame)
+			LoadSaveGame(true);
 
+		currentSaveGame->fLevelName = GetWorld()->GetMapName();
+		currentSaveGame->fLevelName.ReplaceInline(*GetWorld()->StreamingLevelsPrefix, TEXT(""));
+
+		character->OnSaveGame(currentSaveGame);
+		UGameplayStatics::SaveGameToSlot(currentSaveGame, "savegame", 0);
+		return true;
+	}
+	return false;
 }
 
 UNEHSaveGame* ANEHGameState::LoadGame()
 {
-	return Cast<UNEHSaveGame>(UGameplayStatics::CreateSaveGameObject(UNEHSaveGame::StaticClass()));
+	LoadSaveGame(true);
+	UGameplayStatics::OpenLevel(GetWorld(), FName(*currentSaveGame->fLevelName), true);
+// 	ANoEndHouseCharacter* character = Cast<ANoEndHouseCharacter>(GetWorld()->GetFirstPlayerController()->GetCharacter());
+// 	if (character)
+// 	{
+// 		character->SetActorLocation(currentSaveGame->aPlayerLocation);
+// 		character->Inventory = currentSaveGame->inventory;
+// 	}
+	return currentSaveGame;
+}
+
+bool ANEHGameState::HasSaveGame()
+{
+	return UGameplayStatics::DoesSaveGameExist("savegame", 0);
+}
+
+void ANEHGameState::LoadSaveGame(bool createifNotPresent /*= false*/)
+{
+	currentSaveGame = Cast<UNEHSaveGame>(UGameplayStatics::LoadGameFromSlot("savegame", 0));
+	if (!currentSaveGame && createifNotPresent)
+		currentSaveGame = Cast<UNEHSaveGame>(UGameplayStatics::CreateSaveGameObject(UNEHSaveGame::StaticClass()));
+}
+
+void ANEHGameState::DeleteSaveGame()
+{
+	UGameplayStatics::DeleteGameInSlot("savegame", 0);
+	currentSaveGame = nullptr;
 }

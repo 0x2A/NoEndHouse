@@ -7,6 +7,7 @@
 #include "PhysicalMaterials/PhysicalMaterial.h"
 #include "PhysicsEngine/PhysicsHandleComponent.h"
 #include "Sound/SoundCue.h"
+#include "NEHGameState.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogFPChar, Warning, All);
 
@@ -82,6 +83,8 @@ ANoEndHouseCharacter::ANoEndHouseCharacter()
 	Sanity = 100.0f;
 	FirstPersonCameraComponent->PostProcessSettings.bOverride_SceneFringeIntensity = true;
 	FirstPersonCameraComponent->PostProcessSettings.bOverride_VignetteIntensity = true;
+
+
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -334,6 +337,15 @@ void ANoEndHouseCharacter::BeginPlay()
 
 		//add this instance to postProcessing settings
 		FirstPersonCameraComponent->PostProcessSettings.AddBlendable(BlinkMaterialInstance, 1.0f);
+	}
+
+	//since the player is only created after loading/creating a new game or dying, we can just always
+	//use the savegame if any available
+	auto gameState = Cast<ANEHGameState>(GetWorld()->GetGameState());
+	if (gameState && gameState->currentSaveGame)
+	{
+		SetActorLocation(gameState->currentSaveGame->aPlayerLocation);
+		Inventory = gameState->currentSaveGame->inventory;
 	}
 }
 
@@ -608,5 +620,12 @@ void ANoEndHouseCharacter::EndRotateObservedObject()
 	//re-enable camera rotation
 	PlayerController->InputPitchScale = -1.75f; //seems to be the default values
 	PlayerController->InputYawScale = 2.5f;
+}
+
+void ANoEndHouseCharacter::OnSaveGame(class UNEHSaveGame* savegame)
+{
+	savegame->aPlayerLocation = GetActorLocation();
+	savegame->inventory = Inventory;
+	savegame->Sanity = Sanity;
 }
 

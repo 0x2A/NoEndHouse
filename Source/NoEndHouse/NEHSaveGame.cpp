@@ -4,5 +4,8 @@
 #include "NEHSaveGame.h"
 
 
-
-
+UNEHSaveGame::UNEHSaveGame()
+{
+	fLevelName = "MainHall";
+	Sanity = 100;
+}

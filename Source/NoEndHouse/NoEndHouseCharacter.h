@@ -30,11 +30,13 @@ class ANoEndHouseCharacter : public ACharacter, public IInventoryInterface
 	bool bCameraShakeWalking;
 	bool bCameraShakeWalkingRight;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = Gameplay, meta = (AllowPrivateAccess = "true"))
-	TArray<FString> Inventory;
+
 
 public:
 	ANoEndHouseCharacter();
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = Gameplay, meta = (AllowPrivateAccess = "true"))
+		TArray<FString> Inventory;
 
 	/** Base turn rate, in deg/sec. Other scaling may affect final turn rate. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category=Camera)
@@ -148,6 +150,9 @@ public:
 
 	void StartPlayFootsteps();
 	void StopPlayFootsteps();
+
+
+	void OnSaveGame(class UNEHSaveGame* savegame);
 
 protected:
 
