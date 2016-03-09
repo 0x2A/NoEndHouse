@@ -142,6 +142,18 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Sound)
 	float FootstepSpeedCrouched;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Gameplay)
+		float MaxZoom;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Gameplay)
+		float BaseFOV;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Gameplay)
+		float ZoomSpeed;
+
+	UPROPERTY(BlueprintReadOnly, Category = Gameplay)
+		bool bZooming;
+
 	bool bFootstepSoundPlaying;
 	bool bWasCrouching;
 	

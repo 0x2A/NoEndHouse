@@ -80,7 +80,13 @@ ANoEndHouseCharacter::ANoEndHouseCharacter()
 
 	PlayerController = nullptr;
 	
+	MaxZoom = 55.0f;
+	bZooming = false;
+	ZoomSpeed = 4.0f;
+	BaseFOV = 90.0f;
+
 	Sanity = 100.0f;
+
 	FirstPersonCameraComponent->PostProcessSettings.bOverride_SceneFringeIntensity = true;
 	FirstPersonCameraComponent->PostProcessSettings.bOverride_VignetteIntensity = true;
 
@@ -447,16 +453,14 @@ void ANoEndHouseCharacter::EndUse()
 
 void ANoEndHouseCharacter::StartObserving()
 {
-	bPhysicsHandleActive = true;
-
 	FHitResult hitResult;
 	FVector camLocation = FirstPersonCameraComponent->GetComponentLocation();
 	FVector targetLoc = FirstPersonCameraComponent->GetForwardVector() * MaxObservationDistance;
-	obsObjRotationOffset = FRotator();
 
 	if (GetWorld()->LineTraceSingleByChannel(hitResult, camLocation, camLocation + targetLoc, COLLISION_OBSERVABLE,
 		FCollisionQueryParams("ObserveTrace", false, this)))
 	{
+
 		HitResultObservObject = hitResult.Actor;
 		if (!HitResultObservObject.IsValid() || !HitResultObservObject->GetClass()->ImplementsInterface(UObservableObject::StaticClass()))
 		{
@@ -469,6 +473,11 @@ void ANoEndHouseCharacter::StartObserving()
 		ObservingObjectDistance = (GetActorLocation() - hitResult.Location).Size();
 		if (HitResultObservComponent->GetMass() < MaxObservationMass)
 		{
+
+			bPhysicsHandleActive = true;
+			bZooming = false;
+			obsObjRotationOffset = FRotator();
+
 			HitResultObservPhysHandle = IObservableObject::Execute_GetPhysicsHandle(HitResultObservObject.Get());
 
 			//hint: the last bool is important, it prevents the object from jiggle around!
@@ -562,6 +571,14 @@ void ANoEndHouseCharacter::Tick(float DeltaSeconds)
 				EndObserving();
 		}
 	}
+	if (bZooming)
+	{
+		FirstPersonCameraComponent->FieldOfView = FMath::Lerp(FirstPersonCameraComponent->FieldOfView, MaxZoom, ZoomSpeed * DeltaSeconds);
+	}
+	else
+	{
+		FirstPersonCameraComponent->FieldOfView = FMath::Lerp(FirstPersonCameraComponent->FieldOfView, BaseFOV, ZoomSpeed * DeltaSeconds);
+	}
 }
 
 void ANoEndHouseCharacter::SetObservationDistance(float val)
@@ -590,7 +607,7 @@ void ANoEndHouseCharacter::BeginZoom()
 		return;
 	}
 
-	//TODO
+	bZooming = true;
 }
 
 void ANoEndHouseCharacter::BeginRotateObservedObject()
@@ -610,7 +627,7 @@ void ANoEndHouseCharacter::EndZoom()
 		return;
 	}
 
-	//TODO
+	bZooming = false;
 }
 
 void ANoEndHouseCharacter::EndRotateObservedObject()
