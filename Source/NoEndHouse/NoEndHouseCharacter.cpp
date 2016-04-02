@@ -208,7 +208,7 @@ void ANoEndHouseCharacter::MoveForward(float Value)
 				{
 					bCameraShakeWalking = true;
 					if (!bCameraShakeWalkingRight)
-						PlayerController->ClientPlayCameraShake(CameraShakeWalk, abs(Value));
+						PlayerController->ClientPlayCameraShake(CameraShakeWalk, fabs(Value));
 				}
 			}
 			else
@@ -248,7 +248,7 @@ void ANoEndHouseCharacter::MoveRight(float Value)
 				{
 					bCameraShakeWalkingRight = true;
 					if (!bCameraShakeWalking)
-						PlayerController->ClientPlayCameraShake(CameraShakeWalk, abs(Value));
+						PlayerController->ClientPlayCameraShake(CameraShakeWalk, fabs(Value));
 				}
 			}
 			else
@@ -567,7 +567,7 @@ void ANoEndHouseCharacter::Tick(float DeltaSeconds)
 		}
 		if (HitResultObservObject.IsValid())
 		{
-			if (MaxObservationDistance < (Mesh->GetComponentLocation() - HitResultObservComponent->GetComponentLocation()).Size())
+			if (MaxObservationDistance < (GetMesh()->GetComponentLocation() - HitResultObservComponent->GetComponentLocation()).Size())
 				EndObserving();
 		}
 	}

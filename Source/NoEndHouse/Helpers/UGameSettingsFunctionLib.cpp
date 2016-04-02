@@ -90,7 +90,7 @@ void UGameSettingsFunctionLib::ApplyUserGraphicSettings(FGraphicSettings setting
 	userSettings->RequestResolutionChange(settings.Resolution.Width, settings.Resolution.Height, mode, true);
 	userSettings->SetScreenResolution(FIntPoint(settings.Resolution.Width, settings.Resolution.Height));
 	Scalability::SaveState(GGameUserSettingsIni);
-	userSettings->ApplySettings();
+	userSettings->ApplySettings(true);
 }
 
 void UGameSettingsFunctionLib::ApplyUserAudioQuality(int32 quality)
@@ -98,7 +98,7 @@ void UGameSettingsFunctionLib::ApplyUserAudioQuality(int32 quality)
 	if (GEngine == nullptr) return;
 	GEngine->GetGameUserSettings()->SetAudioQualityLevel(quality);
 	Scalability::SaveState(GGameUserSettingsIni);
-	GEngine->GetGameUserSettings()->ApplySettings();
+	GEngine->GetGameUserSettings()->ApplySettings(true);
 }
 
 int32 UGameSettingsFunctionLib::GetUserAudioQuality()
