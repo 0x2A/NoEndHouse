@@ -21,4 +21,8 @@ public:
 	virtual void BeginLoadingScreen();
 	UFUNCTION()
 	virtual void EndLoadingScreen();
+
+private:
+
+	bool bFirstLoaded;
 };

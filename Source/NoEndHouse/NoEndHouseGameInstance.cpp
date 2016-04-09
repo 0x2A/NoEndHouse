@@ -11,6 +11,8 @@ void UNoEndHouseGameInstance::Init()
 {
 	UGameInstance::Init();
 
+	bFirstLoaded = false;
+
 	//Add delegates to hook up to the loading process
 	FCoreUObjectDelegates::PreLoadMap.AddUObject(this, &UNoEndHouseGameInstance::BeginLoadingScreen);
 	FCoreUObjectDelegates::PostLoadMap.AddUObject(this, &UNoEndHouseGameInstance::EndLoadingScreen);
@@ -19,8 +21,14 @@ void UNoEndHouseGameInstance::Init()
 
 void UNoEndHouseGameInstance::BeginLoadingScreen()
 {
+	if (!bFirstLoaded)
+	{
+		bFirstLoaded = true;
+		return;
+	}
+
 	FLoadingScreenAttributes loadingScreen;
-	loadingScreen.bAutoCompleteWhenLoadingCompletes = false;
+	loadingScreen.bAutoCompleteWhenLoadingCompletes = true;
 	loadingScreen.MinimumLoadingScreenDisplayTime = 2;
 
 	// workaround: since there is no looping functionality, we pass in the same loading
