@@ -51,8 +51,6 @@ class IObservableObject
 	void EndObservation();
 
 	UFUNCTION(BlueprintImplementableEvent)
-	void ObservingChangedRotation(FTransform transform);
+	void ObservingChangedRotation(FRotator newRotation);
 
-	UFUNCTION(BlueprintImplementableEvent)
-	class UPhysicsHandleComponent* GetPhysicsHandle();
 };

@@ -25,7 +25,11 @@ class ANoEndHouseCharacter : public ACharacter, public IInventoryInterface
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Gameplay, meta = (AllowPrivateAccess = "true"))
 	class APlayerController* PlayerController;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Gameplay, meta = (AllowPrivateAccess = "true"))
+	class UPhysicsHandleComponent* PhysicsHandleLoc;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Gameplay, meta = (AllowPrivateAccess = "true"))
+	class UPhysicsHandleComponent* PhysicsHandleRot;
 
 	bool bCameraShakeWalking;
 	bool bCameraShakeWalkingRight;
@@ -68,6 +72,9 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Observation)
 	float MaxObservationMass;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Observation)
+	float ThrowStrength;
 
 	UFUNCTION(BlueprintCallable, Category = Gameplay)
 	void SetSanity(float value);
@@ -239,6 +246,9 @@ protected:
 	void StartObserving();
 	void EndObserving();
 
+	UFUNCTION()
+	void EndObservingDestructable(const FVector& HitPoint, const FVector& HitDirection);
+
 	bool bPhysicsHandleActive;
 	bool bIsHeld;
 	bool bRotateHeldObject;
@@ -246,7 +256,8 @@ protected:
 
 	TWeakObjectPtr<class AActor> HitResultObservObject;
 	TWeakObjectPtr<class UPrimitiveComponent> HitResultObservComponent;
-	UPhysicsHandleComponent* HitResultObservPhysHandle;
+
+	
 	float ObservingObjectDistance;
 
 public:

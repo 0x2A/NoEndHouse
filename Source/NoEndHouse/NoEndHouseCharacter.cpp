@@ -6,6 +6,9 @@
 #include "GameFramework/InputSettings.h"
 #include "PhysicalMaterials/PhysicalMaterial.h"
 #include "PhysicsEngine/PhysicsHandleComponent.h"
+#include "PhysicsEngine/DestructibleActor.h"
+#include "Components/DestructibleComponent.h"
+
 #include "Sound/SoundCue.h"
 #include "NEHGameState.h"
 
@@ -52,6 +55,7 @@ ANoEndHouseCharacter::ANoEndHouseCharacter()
 	MaxObservationMass = 100;
 	bRotateHeldObject = false;
 	ObjectObservationRotationSpeed = 12.0f;
+	ThrowStrength = 500.0f;
 	// *** This seems to be still broken in 4.9.2 ***
 	//Initialize camera shaking class
 	/*CameraShake = ConstructObject<UCameraShake>(UCameraShake::StaticClass());
@@ -77,6 +81,17 @@ ANoEndHouseCharacter::ANoEndHouseCharacter()
 	CameraShake->LocOscillation.Z.InitialOffset = EInitialOscillatorOffset::EOO_OffsetRandom;*/
 
 	bPhysicsHandleActive = false;
+	PhysicsHandleLoc = CreateDefaultSubobject<UPhysicsHandleComponent>(TEXT("PhysicsHandleLoc"));
+	PhysicsHandleLoc->AngularDamping = 0.0f;
+	PhysicsHandleLoc->AngularStiffness = 0.0f;
+	PhysicsHandleLoc->InterpolationSpeed = 100.0f;
+
+	PhysicsHandleRot = CreateDefaultSubobject<UPhysicsHandleComponent>(TEXT("PhysicsHandleRot"));
+	PhysicsHandleRot->LinearDamping = 0.0f;
+	PhysicsHandleRot->LinearStiffness = 0.0f;
+	PhysicsHandleRot->AngularDamping = 500.0f;
+	PhysicsHandleRot->AngularStiffness = 1000.0f;
+	PhysicsHandleRot->InterpolationSpeed = 100.0f;
 
 	PlayerController = nullptr;
 	
@@ -443,12 +458,15 @@ void ANoEndHouseCharacter::StopPlayFootsteps()
 
 void ANoEndHouseCharacter::Use()
 {
-	StartObserving();
+	if (bPhysicsHandleActive)
+		EndObserving();
+	else
+		StartObserving();
 }
 
 void ANoEndHouseCharacter::EndUse()
 {
-	EndObserving();
+	//EndObserving();
 }
 
 void ANoEndHouseCharacter::StartObserving()
@@ -458,11 +476,11 @@ void ANoEndHouseCharacter::StartObserving()
 	FVector targetLoc = FirstPersonCameraComponent->GetForwardVector() * MaxObservationDistance;
 
 	if (GetWorld()->LineTraceSingleByChannel(hitResult, camLocation, camLocation + targetLoc, COLLISION_OBSERVABLE,
-		FCollisionQueryParams("ObserveTrace", false, this)))
+		FCollisionQueryParams("ObserveTrace", false, this),FCollisionResponseParams(ECR_Block)))
 	{
 
 		HitResultObservObject = hitResult.Actor;
-		if (!HitResultObservObject.IsValid() || !HitResultObservObject->GetClass()->ImplementsInterface(UObservableObject::StaticClass()))
+		if (!HitResultObservObject.IsValid() || !(HitResultObservObject->GetClass()->ImplementsInterface(UObservableObject::StaticClass()) || HitResultObservObject->Tags.Contains("Observable")))
 		{
 			HitResultObservObject.Reset();
 			return;
@@ -478,18 +496,29 @@ void ANoEndHouseCharacter::StartObserving()
 			bZooming = false;
 			obsObjRotationOffset = FRotator();
 
-			HitResultObservPhysHandle = IObservableObject::Execute_GetPhysicsHandle(HitResultObservObject.Get());
 
+			FVector centerOfMass = HitResultObservComponent->GetCenterOfMass();
+			FVector grabOffset = HitResultObservComponent->GetCenterOfMass() - hitResult.ImpactPoint;
+
+			//setting location and rotation of same handle causes object to fly away at high speed rotations...
+			PhysicsHandleLoc->GrabComponent(HitResultObservComponent.Get(), NAME_None, centerOfMass, false);
 			//hint: the last bool is important, it prevents the object from jiggle around!
 			//This cost us hours to figure out how to prevent the jiggle -.-
-			HitResultObservPhysHandle->GrabComponent(HitResultObservComponent.Get(), hitResult.BoneName, hitResult.ImpactPoint, true);
-			
+			PhysicsHandleRot->GrabComponent(HitResultObservComponent.Get(), NAME_None, centerOfMass, true);
+
 			//dont collide with ourself and other pawns
 			HitResultObservComponent->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
 
 			//we dont want to turn the object itself down again, because of its mass point, we want to rotate it by ourselves
 			HitResultObservComponent->SetEnableGravity(false);
-			IObservableObject::Execute_BeginObservation(HitResultObservObject.Get());
+
+			UDestructibleComponent* destructable = Cast<UDestructibleComponent>(HitResultObservComponent.Get());
+			if (destructable)
+			{
+				destructable->OnComponentFracture.AddDynamic(this, &ANoEndHouseCharacter::EndObservingDestructable);
+			}
+			if(HitResultObservObject->GetClass()->ImplementsInterface(UObservableObject::StaticClass()))
+				IObservableObject::Execute_BeginObservation(HitResultObservObject.Get());
 		}
 
 	}
@@ -502,27 +531,40 @@ void ANoEndHouseCharacter::EndObserving()
 	if (!bPhysicsHandleActive) return;
 	bPhysicsHandleActive = false;
 	
-	if (!HitResultObservObject.IsValid()) return;
-	if (!HitResultObservObject->GetClass()->ImplementsInterface(UObservableObject::StaticClass())) return;
+	PhysicsHandleLoc->ReleaseComponent();
+	PhysicsHandleRot->ReleaseComponent();
 
-	HitResultObservPhysHandle->ReleaseComponent();
-	HitResultObservPhysHandle = nullptr;
-
-	if (!HitResultObservComponent.IsValid()) return;
-	HitResultObservComponent->WakeRigidBody();
-	HitResultObservComponent->SetEnableGravity(true);
-
-	if (bIsHeld)
+	if (HitResultObservComponent.IsValid())
 	{
-		FVector camLocation = FirstPersonCameraComponent->GetForwardVector();
-		camLocation *= MaxObservationMass * 300.0f;
-		HitResultObservComponent->AddImpulse(camLocation);
+		HitResultObservComponent->SetEnableGravity(true);
+		UDestructibleComponent* destructable = Cast<UDestructibleComponent>(HitResultObservComponent.Get());
+		if (!destructable)
+		{
+			HitResultObservComponent->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block);
+			HitResultObservComponent->WakeAllRigidBodies();
+
+			if (bIsHeld)
+			{
+				FVector camLocation = FirstPersonCameraComponent->GetForwardVector();
+				camLocation *= HitResultObservComponent->GetMass() * ThrowStrength;
+				HitResultObservComponent->AddImpulse(camLocation);
+			}
+		}
 	}
-	HitResultObservComponent->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block);
-	IObservableObject::Execute_EndObservation(HitResultObservObject.Get());
+	if (HitResultObservObject.IsValid() && HitResultObservObject->GetClass()->ImplementsInterface(UObservableObject::StaticClass()))
+		IObservableObject::Execute_EndObservation(HitResultObservObject.Get());
 
 	EndRotateObservedObject();
 	HitResultObservObject.Reset();
+}
+
+void ANoEndHouseCharacter::EndObservingDestructable(const FVector& HitPoint, const FVector& HitDirection)
+{
+	if (HitResultObservComponent.IsValid())
+	{
+		HitResultObservComponent->SetEnableGravity(true);
+	}
+	EndObserving();
 }
 
 void ANoEndHouseCharacter::BeginObjectInteraction()
@@ -545,7 +587,7 @@ void ANoEndHouseCharacter::Tick(float DeltaSeconds)
 
 	if (bPhysicsHandleActive)
 	{
-		if (HitResultObservObject.IsValid() && HitResultObservPhysHandle)
+		if (HitResultObservObject.IsValid())
 		{
 			FVector forwardRot = FRotationMatrix(GetControlRotation()).GetScaledAxis(EAxis::X);
 			forwardRot *= ObservingObjectDistance;
@@ -560,10 +602,12 @@ void ANoEndHouseCharacter::Tick(float DeltaSeconds)
 				FQuat AQuat = FQuat(obsObjRotationOffset);
 				FQuat BQuat = FQuat(FRotator(-dY*ObjectObservationRotationSpeed,-dX*ObjectObservationRotationSpeed,0));
 				obsObjRotationOffset = FRotator(BQuat*AQuat);
+				if (HitResultObservObject->GetClass()->ImplementsInterface(UObservableObject::StaticClass()))
+					IObservableObject::Execute_ObservingChangedRotation(HitResultObservObject.Get(), obsObjRotationOffset);
 				
 			}
-			HitResultObservPhysHandle->SetTargetLocationAndRotation(handleLocation, GetControlRotation() + obsObjRotationOffset);
-			
+			PhysicsHandleLoc->SetTargetLocation(handleLocation);
+			PhysicsHandleRot->SetTargetRotation(GetControlRotation() + obsObjRotationOffset);
 		}
 		if (HitResultObservObject.IsValid())
 		{
