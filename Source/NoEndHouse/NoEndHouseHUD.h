@@ -14,7 +14,17 @@ public:
 	/** Primary draw call for the HUD */
 	virtual void DrawHUD() override;
 
+	UFUNCTION(BlueprintCallable, Category = HUD)
+	void ShowGrabIcon();
+
+	UFUNCTION(BlueprintCallable, Category = HUD)
+	void HideGrabIcon();
+
 private:
 
+	/** Crosshair asset pointer */
+	UTexture2D* GrabTex;
+
+	bool bShowGrabIcon;
 };
 
