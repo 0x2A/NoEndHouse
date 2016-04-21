@@ -8,6 +8,7 @@
 #include "PhysicsEngine/PhysicsHandleComponent.h"
 #include "PhysicsEngine/DestructibleActor.h"
 #include "Components/DestructibleComponent.h"
+#include "NoEndHouseHUD.h"
 
 #include "Sound/SoundCue.h"
 #include "NEHGameState.h"
@@ -293,6 +294,22 @@ void ANoEndHouseCharacter::StopCrouching_Implementation()
 }
 
 
+void ANoEndHouseCharacter::ShowGrabIcon()
+{
+	ANoEndHouseHUD* mHud = Cast<ANoEndHouseHUD>(PlayerController->GetHUD());
+	if (mHud)
+		mHud->ShowGrabIcon();
+}
+
+void ANoEndHouseCharacter::HideGrabIcon()
+{
+	ANoEndHouseHUD* mHud = Cast<ANoEndHouseHUD>(PlayerController->GetHUD());
+	if (mHud)
+		mHud->HideGrabIcon();
+}
+
+
+
 void ANoEndHouseCharacter::TurnAtRate(float Rate)
 {
 	// calculate delta for this frame from the rate information
@@ -485,7 +502,7 @@ void ANoEndHouseCharacter::StartObserving()
 			HitResultObservObject.Reset();
 			return;
 		}
-
+		HideGrabIcon();
 		HitResultObservComponent = hitResult.Component;
 
 		ObservingObjectDistance = (GetActorLocation() - hitResult.Location).Size();
@@ -614,6 +631,23 @@ void ANoEndHouseCharacter::Tick(float DeltaSeconds)
 			if (MaxObservationDistance < (GetMesh()->GetComponentLocation() - HitResultObservComponent->GetComponentLocation()).Size())
 				EndObserving();
 		}
+	}
+	else 
+	{
+		FHitResult hitResult;
+		FVector camLocation = FirstPersonCameraComponent->GetComponentLocation();
+		FVector targetLoc = FirstPersonCameraComponent->GetForwardVector() * MaxObservationDistance;
+
+		if (GetWorld()->LineTraceSingleByChannel(hitResult, camLocation, camLocation + targetLoc, COLLISION_OBSERVABLE,
+			FCollisionQueryParams("ObserveTrace", false, this), FCollisionResponseParams(ECR_Block)))
+		{
+			if (hitResult.Actor.IsValid() && (hitResult.Actor->GetClass()->ImplementsInterface(UObservableObject::StaticClass()) || hitResult.Actor->Tags.Contains("Observable")))
+			{
+				ShowGrabIcon();
+			}
+		}
+		else
+			HideGrabIcon();
 	}
 	if (bZooming)
 	{
