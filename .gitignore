@@ -4,6 +4,7 @@ Intermediate
 Saved
 BluCache
 *.opensdf
+*.opendb
 *.sdf
 *.sln
 *.suo

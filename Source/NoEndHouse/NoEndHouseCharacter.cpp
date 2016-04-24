@@ -473,10 +473,15 @@ void ANoEndHouseCharacter::StopPlayFootsteps()
 	GetWorld()->GetTimerManager().ClearTimer(FootstepTimerHandle);
 }
 
+void ANoEndHouseCharacter::StopObservingObject(bool applyDefaultPhysics /*= true*/)
+{
+	EndObserving(applyDefaultPhysics);
+}
+
 void ANoEndHouseCharacter::Use()
 {
 	if (bPhysicsHandleActive)
-		EndObserving();
+		EndObserving(true);
 	else
 		StartObserving();
 }
@@ -497,12 +502,19 @@ void ANoEndHouseCharacter::StartObserving()
 	{
 
 		HitResultObservObject = hitResult.Actor;
-		if (!HitResultObservObject.IsValid() || !(HitResultObservObject->GetClass()->ImplementsInterface(UObservableObject::StaticClass()) || HitResultObservObject->Tags.Contains("Observable")))
+		bool implementsInterface = HitResultObservObject->GetClass()->ImplementsInterface(UObservableObject::StaticClass());
+		if (!HitResultObservObject.IsValid() || !(implementsInterface || HitResultObservObject->Tags.Contains("Observable")))
 		{
 			HitResultObservObject.Reset();
 			return;
 		}
 		HideGrabIcon();
+		if (implementsInterface && !IObservableObject::Execute_CanPickup(HitResultObservObject.Get()))
+		{
+			HitResultObservObject.Reset();
+			return;
+		}
+
 		HitResultObservComponent = hitResult.Component;
 
 		ObservingObjectDistance = (GetActorLocation() - hitResult.Location).Size();
@@ -534,7 +546,7 @@ void ANoEndHouseCharacter::StartObserving()
 			{
 				destructable->OnComponentFracture.AddDynamic(this, &ANoEndHouseCharacter::EndObservingDestructable);
 			}
-			if(HitResultObservObject->GetClass()->ImplementsInterface(UObservableObject::StaticClass()))
+			if(implementsInterface)
 				IObservableObject::Execute_BeginObservation(HitResultObservObject.Get());
 		}
 
@@ -543,7 +555,7 @@ void ANoEndHouseCharacter::StartObserving()
 		//HitResultObservObject.Reset();
 }
 
-void ANoEndHouseCharacter::EndObserving()
+void ANoEndHouseCharacter::EndObserving(bool applyForces)
 {
 	if (!bPhysicsHandleActive) return;
 	bPhysicsHandleActive = false;
@@ -553,19 +565,22 @@ void ANoEndHouseCharacter::EndObserving()
 
 	if (HitResultObservComponent.IsValid())
 	{
-		HitResultObservComponent->SetEnableGravity(true);
+		if(applyForces)
+			HitResultObservComponent->SetEnableGravity(true);
 		UDestructibleComponent* destructable = Cast<UDestructibleComponent>(HitResultObservComponent.Get());
 		if (!destructable)
 		{
 			HitResultObservComponent->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block);
-			HitResultObservComponent->WakeAllRigidBodies();
-
-			if (bIsHeld)
+			if (applyForces)
 			{
-				FVector camLocation = FirstPersonCameraComponent->GetForwardVector();
-				camLocation *= HitResultObservComponent->GetMass() * ThrowStrength;
-				HitResultObservComponent->AddImpulse(camLocation);
+				HitResultObservComponent->WakeAllRigidBodies();
 			}
+		}
+		if (bIsHeld && applyForces)
+		{
+			FVector camLocation = FirstPersonCameraComponent->GetForwardVector();
+			camLocation *= HitResultObservComponent->GetMass() * ThrowStrength;
+			HitResultObservComponent->AddImpulse(camLocation);
 		}
 	}
 	if (HitResultObservObject.IsValid() && HitResultObservObject->GetClass()->ImplementsInterface(UObservableObject::StaticClass()))
@@ -581,7 +596,7 @@ void ANoEndHouseCharacter::EndObservingDestructable(const FVector& HitPoint, con
 	{
 		HitResultObservComponent->SetEnableGravity(true);
 	}
-	EndObserving();
+	EndObserving(true);
 }
 
 void ANoEndHouseCharacter::BeginObjectInteraction()
@@ -589,7 +604,7 @@ void ANoEndHouseCharacter::BeginObjectInteraction()
 	if (bPhysicsHandleActive && !bRotateHeldObject)
 	{
 		bIsHeld = true;
-		EndObserving();
+		EndObserving(true);
 	}
 }
 
@@ -629,7 +644,7 @@ void ANoEndHouseCharacter::Tick(float DeltaSeconds)
 		if (HitResultObservObject.IsValid())
 		{
 			if (MaxObservationDistance < (GetMesh()->GetComponentLocation() - HitResultObservComponent->GetComponentLocation()).Size())
-				EndObserving();
+				EndObserving(true);
 		}
 	}
 	else 
@@ -641,9 +656,13 @@ void ANoEndHouseCharacter::Tick(float DeltaSeconds)
 		if (GetWorld()->LineTraceSingleByChannel(hitResult, camLocation, camLocation + targetLoc, COLLISION_OBSERVABLE,
 			FCollisionQueryParams("ObserveTrace", false, this), FCollisionResponseParams(ECR_Block)))
 		{
-			if (hitResult.Actor.IsValid() && (hitResult.Actor->GetClass()->ImplementsInterface(UObservableObject::StaticClass()) || hitResult.Actor->Tags.Contains("Observable")))
+			bool implementInterface = hitResult.Actor->GetClass()->ImplementsInterface(UObservableObject::StaticClass());
+			if (hitResult.Actor.IsValid() && (implementInterface || hitResult.Actor->Tags.Contains("Observable")))
 			{
-				ShowGrabIcon();
+				if (implementInterface && !IObservableObject::Execute_CanPickup(hitResult.Actor.Get()))
+					HideGrabIcon();
+				else
+					ShowGrabIcon();
 			}
 		}
 		else

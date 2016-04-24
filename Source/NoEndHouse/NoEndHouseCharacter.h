@@ -171,6 +171,9 @@ public:
 	void StopPlayFootsteps();
 
 
+	UFUNCTION(BlueprintCallable, Category = Gameplay)
+	void StopObservingObject(bool applyDefaultPhysics = true);
+
 	void OnSaveGame(class UNEHSaveGame* savegame);
 
 protected:
@@ -248,7 +251,7 @@ protected:
 	void EndObjectInteraction();
 
 	void StartObserving();
-	void EndObserving();
+	void EndObserving(bool applyForces);
 
 	UFUNCTION()
 	void EndObservingDestructable(const FVector& HitPoint, const FVector& HitDirection);

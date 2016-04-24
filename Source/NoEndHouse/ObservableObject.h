@@ -53,4 +53,7 @@ class IObservableObject
 	UFUNCTION(BlueprintImplementableEvent)
 	void ObservingChangedRotation(FRotator newRotation);
 
+	UFUNCTION(BlueprintImplementableEvent)
+	bool CanPickup();
+
 };
