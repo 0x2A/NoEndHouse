@@ -4,6 +4,7 @@
 
 #include "GameFramework/Character.h"
 #include "ObservableObject.h"
+#include "Engine/TargetPoint.h"
 #include "CharacterMouse.generated.h"
 
 UCLASS()
@@ -39,6 +40,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = AI)
 	bool ShouldMove;
 
+	UPROPERTY(BlueprintReadOnly, Category = AI)
+	TArray<class ATargetPoint*> TargetPositions;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = AI)
-	TArray<class AActor*> TargetPositions;
+	FString WaypointPrefix;
 };

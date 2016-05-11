@@ -24,8 +24,6 @@ public:
 
 	void OnMoveCompleted(FAIRequestID RequestID, EPathFollowingResult::Type Result) override;
 
-	void MoveFinished();
-
 
 private:
 

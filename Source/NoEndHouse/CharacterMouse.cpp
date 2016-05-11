@@ -2,6 +2,7 @@
 
 #include "NoEndHouse.h"
 #include "CharacterMouse.h"
+#include "EngineUtils.h"
 
 
 // Sets default values
@@ -23,6 +24,7 @@ ACharacterMouse::ACharacterMouse()
 	bUseControllerRotationYaw = false;
 
 	ShouldMove = true;
+
 }
 
 // Called when the game starts or when spawned
@@ -32,6 +34,13 @@ void ACharacterMouse::BeginPlay()
 	
 	if (ShouldMove)
 		RatSound->Play();
+
+	TargetPositions.Empty();
+	for (TActorIterator<ATargetPoint> ActorItr(GetWorld()); ActorItr; ++ActorItr)
+	{
+		if (ActorItr->GetName().StartsWith(WaypointPrefix))
+			TargetPositions.Add(*ActorItr);
+	}
 }
 
 // Called every frame

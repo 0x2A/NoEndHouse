@@ -36,6 +36,8 @@ void AAIControllerMouse::BeginPlay()
 	Super::BeginPlay();
 
 	CharacterMouse = Cast<ACharacterMouse>(GetCharacter());
+	if (CharacterMouse && CharacterMouse->TargetPositions.Num() == 0)
+		CharacterMouse->DisableMovement();
 }
 
 void AAIControllerMouse::OnMoveCompleted(FAIRequestID RequestID, EPathFollowingResult::Type Result)
@@ -67,6 +69,8 @@ void AAIControllerMouse::MoveToRandomLocation()
 	bMoving = true;
 
 	auto locations = CharacterMouse->TargetPositions;
+	if (locations.Num() == 0) return;
+
 	int indx = FMath::RandRange(0, locations.Num() - 1);
 
 	auto location = locations[indx];
