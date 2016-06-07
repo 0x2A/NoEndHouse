@@ -9,10 +9,17 @@
 ANEHGameState::ANEHGameState()
 {
 	LoadSaveGame(false);
+	bPlayerDied = false;
 }
 
 bool ANEHGameState::SaveGame()
 {
+	static const auto CVar = IConsoleManager::Get().FindConsoleVariable(TEXT("g.SaveGameEditorEnable"));
+	auto worldType = GetWorld()->WorldType;
+	if ((worldType == EWorldType::Editor || worldType == EWorldType::PIE) && CVar->GetInt() <= 0)
+	{
+		return false;
+	}
 	//we first need to check if we have a valid player character. Otherwise
 	//there could be a save game call without a player character being chreated
 	//resulting in an invalid player position saved

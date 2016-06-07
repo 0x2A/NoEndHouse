@@ -91,13 +91,14 @@ public:
 	UFUNCTION(BlueprintNativeEvent, Category = Movement)
 	void StopCrouching();
 
-
-
 	UFUNCTION(BlueprintNativeEvent, Category = Movement)
 		void OnBlink();
 
 	UFUNCTION(BlueprintNativeEvent, Category = Movement)
 		void OnEndBlinking(const float blinkTime);
+
+
+	float TakeDamage(float Damage, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, class AActor* DamageCauser) override;
 
 	void Tick(float DeltaSeconds) override;
 

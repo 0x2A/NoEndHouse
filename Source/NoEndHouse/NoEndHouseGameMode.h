@@ -10,6 +10,8 @@ class ANoEndHouseGameMode : public AGameMode
 
 public:
 	ANoEndHouseGameMode();
+
+
 };
 
 

@@ -32,6 +32,9 @@ public:
 	UPROPERTY(BlueprintReadOnly, Category = "Savegame")
 	UNEHSaveGame* currentSaveGame;
 
+	UPROPERTY(BlueprintReadOnly, Category = "gameplay")
+	bool bPlayerDied;
+
 private:
 
 	void LoadSaveGame(bool createifNotPresent = false);

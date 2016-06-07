@@ -382,8 +382,15 @@ void ANoEndHouseCharacter::BeginPlay()
 	auto gameState = Cast<ANEHGameState>(GetWorld()->GetGameState());
 	if (gameState && gameState->currentSaveGame)
 	{
-		SetActorLocation(gameState->currentSaveGame->aPlayerLocation);
-		Inventory = gameState->currentSaveGame->inventory;
+		static const auto CVar = IConsoleManager::Get().FindConsoleVariable(TEXT("g.SaveGameEditorEnable"));
+		auto worldType = GetWorld()->WorldType;
+		if ( !((worldType == EWorldType::Editor || worldType == EWorldType::PIE) && CVar->GetInt() <= 0) || gameState->bPlayerDied)
+		{
+			gameState->bPlayerDied = false;
+			SetActorLocation(gameState->currentSaveGame->aPlayerLocation);
+			Inventory = gameState->currentSaveGame->inventory;
+		}
+		
 	}
 }
 
@@ -611,6 +618,25 @@ void ANoEndHouseCharacter::BeginObjectInteraction()
 void ANoEndHouseCharacter::EndObjectInteraction()
 {
 	bIsHeld = false;
+}
+
+float ANoEndHouseCharacter::TakeDamage(float Damage, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, class AActor* DamageCauser)
+{
+	// Call the base class - this will tell us how much damage to apply  
+	const float ActualDamage = Super::TakeDamage(Damage, DamageEvent, EventInstigator, DamageCauser);
+	if (ActualDamage > 0.f)
+	{
+		// If the damage depletes our health set our lifespan to zero - which will destroy the actor  
+		//if (Health <= 0.f)
+		//{
+			SetLifeSpan(0.001f);
+			auto nehGameState = Cast<ANEHGameState>(GetWorld()->GameState);
+			if (nehGameState)
+				nehGameState->bPlayerDied = true;
+		//}
+	}
+
+	return ActualDamage;
 }
 
 void ANoEndHouseCharacter::Tick(float DeltaSeconds)
