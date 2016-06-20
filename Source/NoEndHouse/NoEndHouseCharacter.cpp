@@ -106,7 +106,7 @@ ANoEndHouseCharacter::ANoEndHouseCharacter()
 	FirstPersonCameraComponent->PostProcessSettings.bOverride_SceneFringeIntensity = true;
 	FirstPersonCameraComponent->PostProcessSettings.bOverride_VignetteIntensity = true;
 
-
+	lastStaticMeshComp = nullptr;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -498,6 +498,15 @@ void ANoEndHouseCharacter::EndUse()
 	//EndObserving();
 }
 
+UStaticMeshComponent* GetStaticMeshComponent(AActor* actor)
+{
+	TArray<UStaticMeshComponent*> Components;
+	actor->GetComponents<UStaticMeshComponent>(Components);
+	if (Components.Num() > 0)
+		return Components[0];
+	return nullptr;
+}
+
 void ANoEndHouseCharacter::StartObserving()
 {
 	FHitResult hitResult;
@@ -509,8 +518,13 @@ void ANoEndHouseCharacter::StartObserving()
 	{
 
 		HitResultObservObject = hitResult.Actor;
+		
+		auto staticMeshComp = GetStaticMeshComponent(HitResultObservObject.Get());
+		if (staticMeshComp)
+			staticMeshComp->SetRenderCustomDepth(false);
+
 		bool implementsInterface = HitResultObservObject->GetClass()->ImplementsInterface(UObservableObject::StaticClass());
-		if (!HitResultObservObject.IsValid() || !(implementsInterface || HitResultObservObject->Tags.Contains("Observable")))
+		if (!(HitResultObservObject.IsValid() /* || implementsInterface || HitResultObservObject->Tags.Contains("Observable")*/))
 		{
 			HitResultObservObject.Reset();
 			return;
@@ -683,16 +697,39 @@ void ANoEndHouseCharacter::Tick(float DeltaSeconds)
 			FCollisionQueryParams("ObserveTrace", false, this), FCollisionResponseParams(ECR_Block)))
 		{
 			bool implementInterface = hitResult.Actor->GetClass()->ImplementsInterface(UObservableObject::StaticClass());
-			if (hitResult.Actor.IsValid() && (implementInterface || hitResult.Actor->Tags.Contains("Observable")))
+			if (hitResult.Actor.IsValid() /*&& (implementInterface || hitResult.Actor-><s.Contains("Observable"))*/)
 			{
 				if (implementInterface && !IObservableObject::Execute_CanPickup(hitResult.Actor.Get()))
 					HideGrabIcon();
 				else
+				{
 					ShowGrabIcon();
+					
+					if (lastStaticMeshComp) //if we hover over another object to a new one the old one doesnt get reset
+					{
+						lastStaticMeshComp->SetRenderCustomDepth(false);
+						lastStaticMeshComp = nullptr;
+					}
+					auto staticMeshComp = GetStaticMeshComponent(hitResult.Actor.Get());
+					if (staticMeshComp)
+					{
+						staticMeshComp->SetRenderCustomDepth(true);
+						lastStaticMeshComp = staticMeshComp;
+					}
+
+				}
+					
 			}
 		}
 		else
+		{
 			HideGrabIcon();
+			if (lastStaticMeshComp)
+			{
+				lastStaticMeshComp->SetRenderCustomDepth(false);
+				lastStaticMeshComp = nullptr;
+			}
+		}
 	}
 	if (bZooming)
 	{

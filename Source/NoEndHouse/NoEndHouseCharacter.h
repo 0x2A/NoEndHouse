@@ -265,7 +265,8 @@ protected:
 	TWeakObjectPtr<class AActor> HitResultObservObject;
 	TWeakObjectPtr<class UPrimitiveComponent> HitResultObservComponent;
 
-	
+	UStaticMeshComponent* lastStaticMeshComp;
+
 	float ObservingObjectDistance;
 
 public:
