@@ -7,6 +7,9 @@
 
 class UInputComponent;
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FBeginBlinkDelegate);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FEndBlinkDelegate, float, BlinkTime);
+
 UCLASS(config=Game)
 class ANoEndHouseCharacter : public ACharacter, public IInventoryInterface
 {
@@ -76,6 +79,10 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Observation)
 	float ThrowStrength;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Gameplay)
+	bool bCanMove;
+
+
 	UFUNCTION(BlueprintCallable, Category = Gameplay)
 	void SetSanity(float value);
 
@@ -85,17 +92,26 @@ public:
 	UFUNCTION(BlueprintImplementableEvent, Category = Movement)
 	void OnMoveRight(float val);
 
+	UFUNCTION(BlueprintCallable, Category = "Pawn|Character")
+	virtual void Jump() override;
+
 	UFUNCTION(BlueprintNativeEvent, Category = Movement)
 	void Crouch();
 
 	UFUNCTION(BlueprintNativeEvent, Category = Movement)
 	void StopCrouching();
 
-	UFUNCTION(BlueprintNativeEvent, Category = Movement)
+	UFUNCTION(BlueprintNativeEvent, Category = Gameplay)
 		void OnBlink();
 
-	UFUNCTION(BlueprintNativeEvent, Category = Movement)
+	UFUNCTION(BlueprintNativeEvent, Category = Gameplay)
 		void OnEndBlinking(const float blinkTime);
+
+	UPROPERTY(BlueprintAssignable, Category = "Gameplay")
+		FBeginBlinkDelegate OnBeginBlinkDelegate;
+
+	UPROPERTY(BlueprintAssignable, Category = "Gameplay")
+		FEndBlinkDelegate OnEndBlinkDelegate;
 
 
 	float TakeDamage(float Damage, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, class AActor* DamageCauser) override;

@@ -107,6 +107,8 @@ ANoEndHouseCharacter::ANoEndHouseCharacter()
 	FirstPersonCameraComponent->PostProcessSettings.bOverride_VignetteIntensity = true;
 
 	lastStaticMeshComp = nullptr;
+
+	bCanMove = true;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -207,6 +209,8 @@ void ANoEndHouseCharacter::TouchUpdate(const ETouchIndex::Type FingerIndex, cons
 
 void ANoEndHouseCharacter::MoveForward(float Value)
 {
+	if (!bCanMove) Value = 0.0f;
+
 	if (Value != 0.0f)
 	{
 		if (GetCharacterMovement()->IsMovingOnGround() && GetCharacterMovement()->IsWalking())
@@ -247,6 +251,8 @@ void ANoEndHouseCharacter::MoveForward(float Value)
 
 void ANoEndHouseCharacter::MoveRight(float Value)
 {
+
+	if (!bCanMove) Value = 0.0f;
 	if (Value != 0.0f)
 	{
 		if (GetCharacterMovement()->IsMovingOnGround() && GetCharacterMovement()->IsWalking())
@@ -354,13 +360,13 @@ void ANoEndHouseCharacter::OnBlink_Implementation()
 {
 	if (!BlinkMaterialInstance) return;
 	BlinkMaterialInstance->SetScalarParameterValue("Value", 0.0f);
+	
 }
 
 void ANoEndHouseCharacter::OnEndBlinking_Implementation(const float blinkTime)
 {
 	if (!BlinkMaterialInstance) return;
 	BlinkMaterialInstance->SetScalarParameterValue("Value", 1.0f);
-
 }
 
 void ANoEndHouseCharacter::BeginPlay()
@@ -400,6 +406,12 @@ void ANoEndHouseCharacter::SetSanity(float value)
 	FirstPersonCameraComponent->PostProcessSettings.SceneFringeIntensity = ((100.0f - Sanity) / 100.0f) * 5.0f;
 	FirstPersonCameraComponent->PostProcessSettings.VignetteIntensity = ((100.0f - Sanity) / 100.0f) * 2.0f;
 	
+}
+
+void ANoEndHouseCharacter::Jump()
+{
+	if (bCanMove)
+		Super::Jump();
 }
 
 void ANoEndHouseCharacter::AddInventory(FString item)
@@ -751,12 +763,14 @@ void ANoEndHouseCharacter::Blink()
 {
 	fBeginBlinkSeconds = GetWorld()->GetTimeSeconds();
 	OnBlink();
+	OnBeginBlinkDelegate.Broadcast();
 }
 
 void ANoEndHouseCharacter::StopBlinking()
 {
 	fBlinkSeconds = GetWorld()->GetTimeSeconds() - fBeginBlinkSeconds;
 	OnEndBlinking(fBlinkSeconds);
+	OnEndBlinkDelegate.Broadcast(fBlinkSeconds);
 }
 
 void ANoEndHouseCharacter::BeginZoom()
