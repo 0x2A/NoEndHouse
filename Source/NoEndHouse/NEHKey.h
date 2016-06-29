@@ -3,10 +3,11 @@
 #pragma once
 
 #include "GameFramework/Actor.h"
+#include "InteractiveObject.h"
 #include "NEHKey.generated.h"
 
 UCLASS()
-class NOENDHOUSE_API ANEHKey : public AActor
+class NOENDHOUSE_API ANEHKey : public AActor, public IInteractiveObject
 {
 	GENERATED_BODY()
 	
@@ -42,4 +43,14 @@ public:
 
 	UPROPERTY(BlueprintReadOnly, Category = Gameplay)
 		TArray<class UMaterialInstanceDynamic*> MaterialInstances;
+
+	//IInteractiveObject
+public:
+
+	void BeginInteraction_Implementation() override;
+	bool CanPickup_Implementation() override;
+	bool AllowInteraction_Implementation() override;
+	void ObservingChangedRotation_Implementation(FRotator newRotation) override;
+	void BeginObservation_Implementation() override;
+	void EndObservation_Implementation() override;
 };

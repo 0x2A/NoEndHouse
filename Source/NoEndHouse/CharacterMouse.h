@@ -3,7 +3,7 @@
 #pragma once
 
 #include "GameFramework/Character.h"
-#include "ObservableObject.h"
+#include "InteractiveObject.h"
 #include "Engine/TargetPoint.h"
 #include "CharacterMouse.generated.h"
 

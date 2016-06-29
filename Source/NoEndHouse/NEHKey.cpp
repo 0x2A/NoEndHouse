@@ -63,4 +63,34 @@ void ANEHKey::PickUp()
 	//FTimerManager::SetTimer()
 }
 
+void ANEHKey::BeginInteraction_Implementation()
+{
+	PickUp();
+}
+
+
+bool ANEHKey::CanPickup_Implementation()
+{
+	return false;
+}
+
+bool ANEHKey::AllowInteraction_Implementation()
+{
+	return !bPickedUp;
+}
+
+void ANEHKey::ObservingChangedRotation_Implementation(FRotator newRotation)
+{
+	//nothing to do here
+}
+
+void ANEHKey::BeginObservation_Implementation()
+{
+	//nothing to do here
+}
+
+void ANEHKey::EndObservation_Implementation()
+{
+	//nothing to do here
+}
 

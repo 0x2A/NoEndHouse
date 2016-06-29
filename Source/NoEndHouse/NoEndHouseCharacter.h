@@ -2,7 +2,7 @@
 #pragma once
 #include "GameFramework/Character.h"
 #include "InventoryInterface.h"
-#include "ObservableObject.h"
+#include "InteractiveObject.h"
 #include "NoEndHouseCharacter.generated.h"
 
 class UInputComponent;

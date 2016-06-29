@@ -530,20 +530,31 @@ void ANoEndHouseCharacter::StartObserving()
 	{
 
 		HitResultObservObject = hitResult.Actor;
-		
-		auto staticMeshComp = GetStaticMeshComponent(HitResultObservObject.Get());
+
+		bool implementsInterface = HitResultObservObject->GetClass()->ImplementsInterface(UInteractiveObject::StaticClass());
+		if (implementsInterface && !IInteractiveObject::Execute_AllowInteraction(hitResult.Actor.Get()))
+		{
+			HitResultObservObject.Reset();
+			return;
+		}
+
+		UStaticMeshComponent* staticMeshComp = nullptr;
+		if (hitResult.Component->IsA(UStaticMeshComponent::StaticClass()))
+			staticMeshComp = Cast<UStaticMeshComponent>(hitResult.Component.Get());
+		else
+			staticMeshComp = GetStaticMeshComponent(HitResultObservObject.Get());
 		if (staticMeshComp)
 			staticMeshComp->SetRenderCustomDepth(false);
 
-		bool implementsInterface = HitResultObservObject->GetClass()->ImplementsInterface(UObservableObject::StaticClass());
 		if (!(HitResultObservObject.IsValid() /* || implementsInterface || HitResultObservObject->Tags.Contains("Observable")*/))
 		{
 			HitResultObservObject.Reset();
 			return;
 		}
 		HideGrabIcon();
-		if (implementsInterface && !IObservableObject::Execute_CanPickup(HitResultObservObject.Get()))
+		if (implementsInterface && !IInteractiveObject::Execute_CanPickup(HitResultObservObject.Get()))
 		{
+			IInteractiveObject::Execute_BeginInteraction(HitResultObservObject.Get());
 			HitResultObservObject.Reset();
 			return;
 		}
@@ -580,7 +591,7 @@ void ANoEndHouseCharacter::StartObserving()
 				destructable->OnComponentFracture.AddDynamic(this, &ANoEndHouseCharacter::EndObservingDestructable);
 			}
 			if(implementsInterface)
-				IObservableObject::Execute_BeginObservation(HitResultObservObject.Get());
+				IInteractiveObject::Execute_BeginObservation(HitResultObservObject.Get());
 		}
 
 	}
@@ -616,8 +627,8 @@ void ANoEndHouseCharacter::EndObserving(bool applyForces)
 			HitResultObservComponent->AddImpulse(camLocation);
 		}
 	}
-	if (HitResultObservObject.IsValid() && HitResultObservObject->GetClass()->ImplementsInterface(UObservableObject::StaticClass()))
-		IObservableObject::Execute_EndObservation(HitResultObservObject.Get());
+	if (HitResultObservObject.IsValid() && HitResultObservObject->GetClass()->ImplementsInterface(UInteractiveObject::StaticClass()))
+		IInteractiveObject::Execute_EndObservation(HitResultObservObject.Get());
 
 	EndRotateObservedObject();
 	HitResultObservObject.Reset();
@@ -686,8 +697,8 @@ void ANoEndHouseCharacter::Tick(float DeltaSeconds)
 				FQuat AQuat = FQuat(obsObjRotationOffset);
 				FQuat BQuat = FQuat(FRotator(-dY*ObjectObservationRotationSpeed,-dX*ObjectObservationRotationSpeed,0));
 				obsObjRotationOffset = FRotator(BQuat*AQuat);
-				if (HitResultObservObject->GetClass()->ImplementsInterface(UObservableObject::StaticClass()))
-					IObservableObject::Execute_ObservingChangedRotation(HitResultObservObject.Get(), obsObjRotationOffset);
+				if (HitResultObservObject->GetClass()->ImplementsInterface(UInteractiveObject::StaticClass()))
+					IInteractiveObject::Execute_ObservingChangedRotation(HitResultObservObject.Get(), obsObjRotationOffset);
 				
 			}
 			PhysicsHandleLoc->SetTargetLocation(handleLocation);
@@ -708,10 +719,10 @@ void ANoEndHouseCharacter::Tick(float DeltaSeconds)
 		if (GetWorld()->LineTraceSingleByChannel(hitResult, camLocation, camLocation + targetLoc, COLLISION_OBSERVABLE,
 			FCollisionQueryParams("ObserveTrace", false, this), FCollisionResponseParams(ECR_Block)))
 		{
-			bool implementInterface = hitResult.Actor->GetClass()->ImplementsInterface(UObservableObject::StaticClass());
+			bool implementInterface = hitResult.Actor->GetClass()->ImplementsInterface(UInteractiveObject::StaticClass());
 			if (hitResult.Actor.IsValid() /*&& (implementInterface || hitResult.Actor-><s.Contains("Observable"))*/)
 			{
-				if (implementInterface && !IObservableObject::Execute_CanPickup(hitResult.Actor.Get()))
+				if (implementInterface && !IInteractiveObject::Execute_AllowInteraction(hitResult.Actor.Get()))
 					HideGrabIcon();
 				else
 				{
@@ -722,7 +733,11 @@ void ANoEndHouseCharacter::Tick(float DeltaSeconds)
 						lastStaticMeshComp->SetRenderCustomDepth(false);
 						lastStaticMeshComp = nullptr;
 					}
-					auto staticMeshComp = GetStaticMeshComponent(hitResult.Actor.Get());
+					UStaticMeshComponent* staticMeshComp = nullptr;
+					if (hitResult.Component->IsA(UStaticMeshComponent::StaticClass()))
+						staticMeshComp = Cast<UStaticMeshComponent>(hitResult.Component.Get());
+					else
+						staticMeshComp = GetStaticMeshComponent(hitResult.Actor.Get());
 					if (staticMeshComp)
 					{
 						staticMeshComp->SetRenderCustomDepth(true);
