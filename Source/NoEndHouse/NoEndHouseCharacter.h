@@ -10,6 +10,7 @@ class UInputComponent;
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FBeginBlinkDelegate);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FEndBlinkDelegate, float, BlinkTime);
 
+
 UCLASS(config=Game)
 class ANoEndHouseCharacter : public ACharacter, public IInventoryInterface
 {
@@ -37,7 +38,10 @@ class ANoEndHouseCharacter : public ACharacter, public IInventoryInterface
 	bool bCameraShakeWalking;
 	bool bCameraShakeWalkingRight;
 
+	
+	void SetCameraWalkShakeSpeed(float tSpeed);
 
+	void HandleCameraShaking(float value, bool MoveRightLeft);
 
 public:
 	ANoEndHouseCharacter();
@@ -69,7 +73,10 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Camera)
 	TSubclassOf<UCameraShake> CameraShakeWalk;
-		
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Camera)
+	TSubclassOf<UCameraShake> CameraShakeWalkCrouching;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Observation)
 	float MaxObservationDistance;
 
@@ -184,7 +191,7 @@ public:
 	/* Handle to manage the timer */
 	FTimerHandle FootstepTimerHandle;
 
-	void StartPlayFootsteps();
+	void StartPlayFootsteps(float Value);
 	void StopPlayFootsteps();
 
 

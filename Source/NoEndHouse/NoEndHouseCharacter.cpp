@@ -207,6 +207,76 @@ void ANoEndHouseCharacter::TouchUpdate(const ETouchIndex::Type FingerIndex, cons
 	}
 }
 
+void ANoEndHouseCharacter::HandleCameraShaking(float Value, bool MoveRightLeft)
+{
+	if (!MoveRightLeft) //forward backward movement
+	{
+		if (Value != 0.0f)
+		{
+			//if (PlayerController)
+			//{
+				if (GetCharacterMovement()->IsWalking())
+				{
+					if (!bCameraShakeWalking)
+					{
+						bCameraShakeWalking = true;
+						if (!bCameraShakeWalkingRight)
+							PlayerController->ClientPlayCameraShake(bIsCrouching ? CameraShakeWalkCrouching : CameraShakeWalk, fabs(Value));
+					}
+				}
+				else
+					bCameraShakeWalking = false;
+			//}
+		}
+		else
+			bCameraShakeWalking = false;
+	}
+	else //Left right movement
+	{
+		if (Value != 0.0f)
+		{
+			//if (PlayerController)
+			//{
+			if (GetCharacterMovement()->IsWalking())
+			{
+				if (!bCameraShakeWalkingRight)
+				{
+					bCameraShakeWalkingRight = true;
+					if (!bCameraShakeWalking)
+						PlayerController->ClientPlayCameraShake(bIsCrouching ? CameraShakeWalkCrouching : CameraShakeWalk, fabs(Value));
+				}
+			}
+			else
+				bCameraShakeWalkingRight = false;
+			//}
+		}
+		else
+			bCameraShakeWalkingRight = false;
+	}
+
+	
+	if (bCameraShakeWalking || bCameraShakeWalkingRight)
+	{
+		if (!bWasCrouching && bIsCrouching) //are we already shaking but changed to crouching?
+		{
+			PlayerController->ClientStopCameraShake(CameraShakeWalk);
+			PlayerController->ClientPlayCameraShake(CameraShakeWalkCrouching, fabs(Value));
+		}
+		else if (bWasCrouching && !bIsCrouching) //are we already shaking but changed to standing?
+		{
+			PlayerController->ClientStopCameraShake(CameraShakeWalkCrouching); //Is this ok or better check if crouching etc
+			PlayerController->ClientPlayCameraShake(CameraShakeWalk, fabs(Value));
+		}
+	}
+
+	if (/*PlayerController && */!bCameraShakeWalking && !bCameraShakeWalkingRight)
+	{
+		PlayerController->ClientStopCameraShake(CameraShakeWalk);
+		PlayerController->ClientStopCameraShake(CameraShakeWalkCrouching); //Is this ok or better check if crouching etc
+	}
+}
+
+
 void ANoEndHouseCharacter::MoveForward(float Value)
 {
 	if (!bCanMove) Value = 0.0f;
@@ -214,37 +284,18 @@ void ANoEndHouseCharacter::MoveForward(float Value)
 	if (Value != 0.0f)
 	{
 		if (GetCharacterMovement()->IsMovingOnGround() && GetCharacterMovement()->IsWalking())
-			StartPlayFootsteps();
+			StartPlayFootsteps(Value);
 
 		// add movement in that direction
-		AddMovementInput(GetActorForwardVector(), Value);
-
-		//Handle camera shake
-		if (PlayerController)
-		{
-			if (GetCharacterMovement()->IsWalking())
-			{
-				if (!bCameraShakeWalking)
-				{
-					bCameraShakeWalking = true;
-					if (!bCameraShakeWalkingRight)
-						PlayerController->ClientPlayCameraShake(CameraShakeWalk, fabs(Value));
-				}
-			}
-			else
-				bCameraShakeWalking = false;
-		}
-	}
-	else
-	{
-		bCameraShakeWalking = false;
+		AddMovementInput(GetActorForwardVector(), Value);	
 	}
 
-	//only stop if both not enabled
-	if (PlayerController && !bCameraShakeWalking && !bCameraShakeWalkingRight)
-		PlayerController->ClientStopCameraShake(CameraShakeWalk);
+	HandleCameraShaking(Value, false);
 
 	OnMoveForward(Value);
+
+	if (bWasCrouching != bIsCrouching)
+		bWasCrouching = bIsCrouching;
 
 	if (GetCharacterMovement()->Velocity.IsZero() || !GetCharacterMovement()->IsMovingOnGround()) StopPlayFootsteps();
 }
@@ -256,34 +307,17 @@ void ANoEndHouseCharacter::MoveRight(float Value)
 	if (Value != 0.0f)
 	{
 		if (GetCharacterMovement()->IsMovingOnGround() && GetCharacterMovement()->IsWalking())
-			StartPlayFootsteps();
+			StartPlayFootsteps(Value);
 
 		// add movement in that direction
 		AddMovementInput(GetActorRightVector(), Value);
 
-		//Handle camera shake
-		if (PlayerController)
-		{
-			if (GetCharacterMovement()->IsWalking())
-			{
-				if (!bCameraShakeWalkingRight)
-				{
-					bCameraShakeWalkingRight = true;
-					if (!bCameraShakeWalking)
-						PlayerController->ClientPlayCameraShake(CameraShakeWalk, fabs(Value));
-				}
-			}
-			else
-				bCameraShakeWalkingRight = false;
-		}
 	}
-	else
-	{
-		bCameraShakeWalkingRight = false;
-	}
+	HandleCameraShaking(Value, true);
 
 	OnMoveRight(Value);
-	if (GetCharacterMovement()->Velocity.IsZero() || !GetCharacterMovement()->IsMovingOnGround()) StopPlayFootsteps();
+
+	//if (GetCharacterMovement()->Velocity.IsZero() || !GetCharacterMovement()->IsMovingOnGround()) StopPlayFootsteps();
 }
 
 
@@ -473,16 +507,14 @@ void ANoEndHouseCharacter::PlayFootstep()
 
 
 //TODO: Get rid of this and use animation events instead
-void ANoEndHouseCharacter::StartPlayFootsteps()
+void ANoEndHouseCharacter::StartPlayFootsteps(float Value)
 {
-	if (bIsCrouching != bWasCrouching)
+	if (bIsCrouching != bWasCrouching && bFootstepSoundPlaying)
 	{
-		bWasCrouching = bIsCrouching;
-		if (bFootstepSoundPlaying)
-			StopPlayFootsteps();
+		StopPlayFootsteps();
 	}
 	if (!bFootstepSoundPlaying)
-		GetWorld()->GetTimerManager().SetTimer(FootstepTimerHandle, this, &ANoEndHouseCharacter::PlayFootstep, bIsCrouching ? FootstepSpeedCrouched : FootstepSpeed, true, 0.1f);
+		GetWorld()->GetTimerManager().SetTimer(FootstepTimerHandle, this, &ANoEndHouseCharacter::PlayFootstep, (bIsCrouching ? FootstepSpeedCrouched : FootstepSpeed) * (2.0f - fabs(Value)), true, 0.1f);
 	bFootstepSoundPlaying = true;
 }
 
