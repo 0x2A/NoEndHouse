@@ -77,6 +77,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Camera)
 	TSubclassOf<UCameraShake> CameraShakeWalkCrouching;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Camera)
+	TSubclassOf<UCameraShake> CameraShakeSanity;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Observation)
 	float MaxObservationDistance;
 
@@ -292,6 +295,8 @@ protected:
 
 	float ObservingObjectDistance;
 
+	float fLastTime;
+	float fCurrentTime;
 public:
 	/** Returns Mesh1P subobject **/
 	FORCEINLINE class USkeletalMeshComponent* GetMesh1P() const { return Mesh1P; }

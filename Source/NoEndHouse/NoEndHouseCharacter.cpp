@@ -107,6 +107,7 @@ ANoEndHouseCharacter::ANoEndHouseCharacter()
 	FirstPersonCameraComponent->PostProcessSettings.bOverride_VignetteIntensity = true;
 
 	lastStaticMeshComp = nullptr;
+	fLastTime = fCurrentTime = 0;
 
 	bCanMove = true;
 }
@@ -797,6 +798,15 @@ void ANoEndHouseCharacter::Tick(float DeltaSeconds)
 	else
 	{
 		FirstPersonCameraComponent->FieldOfView = FMath::Lerp(FirstPersonCameraComponent->FieldOfView, BaseFOV, ZoomSpeed * DeltaSeconds);
+	}
+
+	fCurrentTime += DeltaSeconds;
+	if (fCurrentTime - fLastTime >= 0.5f)
+	{
+		fLastTime = fCurrentTime;
+		float tSanity = 100.0f - Sanity;
+		if(tSanity > 0.0f)
+			PlayerController->ClientPlayCameraShake(CameraShakeSanity, tSanity / 100.0f);
 	}
 }
 
