@@ -96,6 +96,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = Gameplay)
 	void SetSanity(float value);
 
+	UFUNCTION(BlueprintCallable, Category = Gameplay)
+	void AddSanity(float value);
+
 	UFUNCTION(BlueprintImplementableEvent, Category = Movement)
 	void OnMoveForward(float val);
 

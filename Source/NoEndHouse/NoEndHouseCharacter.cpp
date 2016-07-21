@@ -443,6 +443,11 @@ void ANoEndHouseCharacter::SetSanity(float value)
 	
 }
 
+void ANoEndHouseCharacter::AddSanity(float value)
+{
+	SetSanity(Sanity + value);
+}
+
 void ANoEndHouseCharacter::Jump()
 {
 	if (bCanMove)
