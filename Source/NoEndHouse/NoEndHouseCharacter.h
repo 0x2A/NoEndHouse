@@ -35,6 +35,9 @@ class ANoEndHouseCharacter : public ACharacter, public IInventoryInterface
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Gameplay, meta = (AllowPrivateAccess = "true"))
 	class UPhysicsHandleComponent* PhysicsHandleRot;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
+	class UPointLightComponent* AmbientLight;
+
 	bool bCameraShakeWalking;
 	bool bCameraShakeWalkingRight;
 
@@ -91,6 +94,9 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Gameplay)
 	bool bCanMove;
+
+	UFUNCTION(BlueprintCallable, Category = Gameplay)
+	void EnableAmbientLight(bool enabled);
 
 
 	UFUNCTION(BlueprintCallable, Category = Gameplay)
@@ -187,6 +193,9 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Gameplay)
 		float ZoomSpeed;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Gameplay)
+		bool SoundEnabled;
 
 	UPROPERTY(BlueprintReadOnly, Category = Gameplay)
 		bool bZooming;

@@ -40,6 +40,16 @@ ANoEndHouseCharacter::ANoEndHouseCharacter()
 	Mesh1P->bCastDynamicShadow = false;
 	Mesh1P->CastShadow = false;
 
+	AmbientLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("AmbientLight"));
+	AmbientLight->AttachParent = GetCapsuleComponent();
+	AmbientLight->RelativeLocation = FVector(0, 0, 41.0f);
+	AmbientLight->SetMobility(EComponentMobility::Movable);
+	AmbientLight->Intensity = 10.0f;
+	AmbientLight->LightColor = FColor(223, 233, 255);
+	AmbientLight->AttenuationRadius = 125.0f;
+	AmbientLight->SourceRadius = 50.0f;
+	AmbientLight->SourceLength = 50.0f;
+
 	bCameraShakeWalking = bCameraShakeWalkingRight = false;
 
 	GetCharacterMovement()->NavAgentProps.bCanCrouch = true;
@@ -57,29 +67,7 @@ ANoEndHouseCharacter::ANoEndHouseCharacter()
 	bRotateHeldObject = false;
 	ObjectObservationRotationSpeed = 12.0f;
 	ThrowStrength = 500.0f;
-	// *** This seems to be still broken in 4.9.2 ***
-	//Initialize camera shaking class
-	/*CameraShake = ConstructObject<UCameraShake>(UCameraShake::StaticClass());
-	CameraShake->OscillationDuration = 1.0f; //negative value will run forever
-	CameraShake->OscillationBlendInTime = 0.1f;
-	CameraShake->OscillationBlendOutTime = 0.2f;
-
-	CameraShake->RotOscillation.Pitch.Amplitude = 1.0f;
-	CameraShake->RotOscillation.Pitch.Frequency = 20.0f;
-	CameraShake->RotOscillation.Pitch.InitialOffset = EInitialOscillatorOffset::EOO_OffsetRandom;
-
-	CameraShake->RotOscillation.Yaw.Amplitude = 0.0f;
-	CameraShake->RotOscillation.Yaw.Frequency = 5.0f;
-	CameraShake->RotOscillation.Yaw.InitialOffset = EInitialOscillatorOffset::EOO_OffsetRandom;
-
-	CameraShake->RotOscillation.Roll.Amplitude = 1.0f;
-	CameraShake->RotOscillation.Roll.Frequency = 9.0f;<
-	CameraShake->RotOscillation.Roll.InitialOffset = EInitialOscillatorOffset::EOO_OffsetRandom;
-
-	CameraShake->LocOscillation.Y.Amplitude = 0.0f;
-	CameraShake->LocOscillation.Z.Amplitude = 2.0f;
-	CameraShake->LocOscillation.Z.Frequency = 20.0f;
-	CameraShake->LocOscillation.Z.InitialOffset = EInitialOscillatorOffset::EOO_OffsetRandom;*/
+	SoundEnabled = true;
 
 	bPhysicsHandleActive = false;
 	PhysicsHandleLoc = CreateDefaultSubobject<UPhysicsHandleComponent>(TEXT("PhysicsHandleLoc"));
@@ -435,6 +423,11 @@ void ANoEndHouseCharacter::BeginPlay()
 	}
 }
 
+void ANoEndHouseCharacter::EnableAmbientLight(bool enabled)
+{
+	AmbientLight->bVisible = enabled;
+}
+
 void ANoEndHouseCharacter::SetSanity(float value)
 {
 	Sanity = FMath::Clamp(value, 0.0f, 100.0f);
@@ -472,6 +465,8 @@ bool ANoEndHouseCharacter::CheckInventory(FString item)
 
 void ANoEndHouseCharacter::PlayFootstep()
 {
+	if (!SoundEnabled) return;
+
 	FVector location = GetActorLocation();
 
 	//Re-initialize hit info
