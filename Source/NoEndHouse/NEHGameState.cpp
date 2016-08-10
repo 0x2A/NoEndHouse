@@ -10,6 +10,7 @@ ANEHGameState::ANEHGameState()
 {
 	LoadSaveGame(false);
 	bPlayerDied = false;
+	bDisclaimerRead = false;
 }
 
 bool ANEHGameState::SaveGame()

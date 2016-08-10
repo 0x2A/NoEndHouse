@@ -82,6 +82,8 @@ void UGameSettingsFunctionLib::ApplyUserGraphicSettings(FGraphicSettings setting
 	userSettings->SetFullscreenMode(mode);
 	userSettings->ScalabilityQuality.ViewDistanceQuality = settings.ViewDistance;
 	userSettings->ScalabilityQuality.AntiAliasingQuality = settings.AntiAliasing;
+	userSettings->ScalabilityQuality.ResolutionQuality = 100.0f;
+	
 	userSettings->ScalabilityQuality.ShadowQuality = settings.ShadowQuality + 1;
 	userSettings->ScalabilityQuality.TextureQuality = settings.TextureResolution;
 	userSettings->ScalabilityQuality.EffectsQuality = settings.EffectsQuality;
@@ -89,6 +91,7 @@ void UGameSettingsFunctionLib::ApplyUserGraphicSettings(FGraphicSettings setting
 	userSettings->ConfirmVideoMode();
 	userSettings->RequestResolutionChange(settings.Resolution.Width, settings.Resolution.Height, mode, true);
 	userSettings->SetScreenResolution(FIntPoint(settings.Resolution.Width, settings.Resolution.Height));
+	userSettings->SetResolutionScaleValue(100.0f);
 	Scalability::SaveState(GGameUserSettingsIni);
 	userSettings->ApplySettings(true);
 }
@@ -100,6 +103,16 @@ void UGameSettingsFunctionLib::ApplyUserAudioQuality(int32 quality)
 	Scalability::SaveState(GGameUserSettingsIni);
 	GEngine->GetGameUserSettings()->ApplySettings(true);
 }
+
+/*void UGameSettingsFunctionLib::SaveUserAudioSettings(int32 quality, TArray<USoundClass*> SoundClasses)
+{
+	if (GEngine == nullptr) return;
+	ApplyUserAudioQuality(quality);
+	for (auto soundClass : SoundClasses)
+	{
+		soundClass->SaveConfig();
+	}
+}*/
 
 int32 UGameSettingsFunctionLib::GetUserAudioQuality()
 {
@@ -118,6 +131,7 @@ void UGameSettingsFunctionLib::SetSoundVolume(USoundClass* soundClassObject, flo
 {
 	if (!soundClassObject) return;
 	soundClassObject->Properties.Volume = newVolume;
+	
 }
 
 void UGameSettingsFunctionLib::GetAllActionKeyBindings(TArray<FInput>& Bindings)

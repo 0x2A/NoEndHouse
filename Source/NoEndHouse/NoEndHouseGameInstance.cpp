@@ -14,8 +14,8 @@ void UNoEndHouseGameInstance::Init()
 	bFirstLoaded = false;
 
 	//Add delegates to hook up to the loading process
-	FCoreUObjectDelegates::PreLoadMap.AddUObject(this, &UNoEndHouseGameInstance::BeginLoadingScreen);
-	FCoreUObjectDelegates::PostLoadMap.AddUObject(this, &UNoEndHouseGameInstance::EndLoadingScreen);
+	//FCoreUObjectDelegates::PreLoadMap.AddUObject(this, &UNoEndHouseGameInstance::BeginLoadingScreen);
+	//FCoreUObjectDelegates::PostLoadMap.AddUObject(this, &UNoEndHouseGameInstance::EndLoadingScreen);
 
 }
 

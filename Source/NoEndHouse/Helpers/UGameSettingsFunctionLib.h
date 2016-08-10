@@ -179,6 +179,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "GameSettings|Audio")
 		static void ApplyUserAudioQuality(int32 quality);
 
+	/*UFUNCTION(BlueprintCallable, Category = "GameSettings|Audio")
+	static void SaveUserAudioSettings(int32 quality, TArray<USoundClass*> SoundClasses);*/
+
 	UFUNCTION(BlueprintCallable, Category = "GameSettings|Audio")
 		static void SetSoundVolume(USoundClass* soundClassObject, float newVolume);
 

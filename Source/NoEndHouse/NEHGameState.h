@@ -35,7 +35,8 @@ public:
 	UPROPERTY(BlueprintReadOnly, Category = "gameplay")
 	bool bPlayerDied;
 
-
+	UPROPERTY(BlueprintReadWrite, Category = "UI")
+	bool bDisclaimerRead;
 
 private:
 
