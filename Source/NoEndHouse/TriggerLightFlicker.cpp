@@ -10,7 +10,7 @@ const float ATriggerLightFlicker::DELTATIME = 0.01f;
 ATriggerLightFlicker::ATriggerLightFlicker()
 {
 	Sound = CreateDefaultSubobject<UAudioComponent>(TEXT("Sound"));
-	Sound->AttachParent = RootComponent;
+	Sound->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepWorldTransform);
 	Sound->bIsMusic = false;
 	Sound->bOverrideAttenuation = true;
 

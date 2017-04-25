@@ -14,7 +14,7 @@ ACharacterMouse::ACharacterMouse()
 
 	// Create a mesh component that will be used when being viewed from a '1st person' view (when controlling this pawn)
 	MouseMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("MouseMesh"));
-	MouseMesh->AttachParent = GetCapsuleComponent();
+	MouseMesh->AttachToComponent(GetCapsuleComponent(), FAttachmentTransformRules::KeepWorldTransform);
 	MouseMesh->bCastDynamicShadow = true;
 	MouseMesh->CastShadow = true;
 

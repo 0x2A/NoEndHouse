@@ -29,19 +29,19 @@ ANoEndHouseCharacter::ANoEndHouseCharacter()
 
 	// Create a CameraComponent	
 	FirstPersonCameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("FirstPersonCamera"));
-	FirstPersonCameraComponent->AttachParent = GetCapsuleComponent();
+	FirstPersonCameraComponent->AttachToComponent(GetCapsuleComponent(), FAttachmentTransformRules::KeepWorldTransform);
 	FirstPersonCameraComponent->RelativeLocation = FVector(0, 0, 64.f); // Position the camera
 	FirstPersonCameraComponent->bUsePawnControlRotation = true;
 
 	// Create a mesh component that will be used when being viewed from a '1st person' view (when controlling this pawn)
 	Mesh1P = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("CharacterMesh1P"));
 	Mesh1P->SetOnlyOwnerSee(true);
-	Mesh1P->AttachParent = FirstPersonCameraComponent;
+	Mesh1P->AttachToComponent(FirstPersonCameraComponent, FAttachmentTransformRules::KeepWorldTransform);
 	Mesh1P->bCastDynamicShadow = false;
 	Mesh1P->CastShadow = false;
 
 	AmbientLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("AmbientLight"));
-	AmbientLight->AttachParent = GetCapsuleComponent();
+	AmbientLight->AttachToComponent(GetCapsuleComponent(), FAttachmentTransformRules::KeepWorldTransform);
 	AmbientLight->RelativeLocation = FVector(0, 0, 41.0f);
 	AmbientLight->SetMobility(EComponentMobility::Movable);
 	AmbientLight->Intensity = 10.0f;
@@ -700,7 +700,7 @@ float ANoEndHouseCharacter::TakeDamage(float Damage, struct FDamageEvent const& 
 		//if (Health <= 0.f)
 		//{
 			SetLifeSpan(0.001f);
-			auto nehGameState = Cast<ANEHGameState>(GetWorld()->GameState);
+			auto nehGameState = Cast<ANEHGameState>(GetWorld()->GetGameState());
 			if (nehGameState)
 				nehGameState->bPlayerDied = true;
 		//}

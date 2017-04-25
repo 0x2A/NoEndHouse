@@ -56,8 +56,6 @@ void AAIControllerMouse::OnMoveCompleted(FAIRequestID RequestID, EPathFollowingR
 	case EPathFollowingResult::Aborted:
 		bMoving = false;
 		break;
-	case EPathFollowingResult::Skipped:
-		break;
 	case EPathFollowingResult::Invalid:
 		bMoving = false;
 		break;

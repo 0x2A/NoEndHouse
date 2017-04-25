@@ -12,12 +12,12 @@ ANEHKey::ANEHKey()
 	KeyID = "INVALID_KEYID";
 
 	KeyMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("KeyMesh"));
-	KeyMesh->AttachParent = RootComponent;
+	KeyMesh->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepWorldTransform);
 	KeyMesh->SetSimulatePhysics(false);
 	
 	
 	DissolveParticleEffect = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("DissolveParticleEffect"));
-	DissolveParticleEffect->AttachParent = KeyMesh;
+	DissolveParticleEffect->AttachToComponent(KeyMesh, FAttachmentTransformRules::KeepWorldTransform);
 	bPickedUp = false;
 }
 
