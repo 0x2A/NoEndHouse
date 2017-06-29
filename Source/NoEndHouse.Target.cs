@@ -5,21 +5,10 @@ using System.Collections.Generic;
 
 public class NoEndHouseTarget : TargetRules
 {
-	public NoEndHouseTarget(TargetInfo Target)
+	public NoEndHouseTarget(TargetInfo Target) : base (Target)
 	{
 		Type = TargetType.Game;
-	}
+        ExtraModuleNames.Add("NoEndHouse");
+    }
 
-	//
-	// TargetRules interface.
-	//
-
-	public override void SetupBinaries(
-		TargetInfo Target,
-		ref List<UEBuildBinaryConfiguration> OutBuildBinaryConfigurations,
-		ref List<string> OutExtraModuleNames
-		)
-	{
-		OutExtraModuleNames.Add("NoEndHouse");
-	}
 }

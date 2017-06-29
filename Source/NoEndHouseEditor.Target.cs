@@ -5,21 +5,10 @@ using System.Collections.Generic;
 
 public class NoEndHouseEditorTarget : TargetRules
 {
-	public NoEndHouseEditorTarget(TargetInfo Target)
+	public NoEndHouseEditorTarget(TargetInfo Target) : base(Target)
 	{
 		Type = TargetType.Editor;
-	}
+        ExtraModuleNames.Add("NoEndHouse");
+    }
 
-	//
-	// TargetRules interface.
-	//
-
-	public override void SetupBinaries(
-		TargetInfo Target,
-		ref List<UEBuildBinaryConfiguration> OutBuildBinaryConfigurations,
-		ref List<string> OutExtraModuleNames
-		)
-	{
-		OutExtraModuleNames.Add("NoEndHouse");
-	}
 }

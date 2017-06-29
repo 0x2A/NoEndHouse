@@ -115,7 +115,7 @@ public:
 	virtual void Jump() override;
 
 	UFUNCTION(BlueprintNativeEvent, Category = Movement)
-	void Crouch();
+	void DoCrouch();
 
 	UFUNCTION(BlueprintNativeEvent, Category = Movement)
 	void StopCrouching();

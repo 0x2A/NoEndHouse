@@ -4,7 +4,7 @@ using UnrealBuildTool;
 
 public class NoEndHouse : ModuleRules
 {
-	public NoEndHouse(TargetInfo Target)
+	public NoEndHouse(ReadOnlyTargetRules Target) : base(Target)
 	{
 		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "MoviePlayer", "RHI", 
             "UMG", "Slate", "SlateCore"});

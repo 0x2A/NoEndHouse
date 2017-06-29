@@ -111,7 +111,7 @@ void ANoEndHouseCharacter::SetupPlayerInputComponent(class UInputComponent* Inpu
 	InputComponent->BindAction("Jump", IE_Pressed, this, &ACharacter::Jump);
 	InputComponent->BindAction("Jump", IE_Released, this, &ACharacter::StopJumping);
 
-	InputComponent->BindAction("Crouch", IE_Pressed, this, &ANoEndHouseCharacter::Crouch);
+	InputComponent->BindAction("Crouch", IE_Pressed, this, &ANoEndHouseCharacter::DoCrouch);
 	InputComponent->BindAction("Crouch", IE_Released, this, &ANoEndHouseCharacter::StopCrouching);
 
 	InputComponent->BindAction("Blink", IE_Pressed, this, &ANoEndHouseCharacter::Blink);
@@ -310,7 +310,7 @@ void ANoEndHouseCharacter::MoveRight(float Value)
 }
 
 
-void ANoEndHouseCharacter::Crouch_Implementation()
+void ANoEndHouseCharacter::DoCrouch_Implementation()
 {
 	bIsCrouching = true;
 	ACharacter::Crouch();
