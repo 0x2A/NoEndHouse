@@ -3,7 +3,7 @@
 #ifndef __NOENDHOUSE_H__
 #define __NOENDHOUSE_H__
 
-#include "EngineMinimal.h"
+#include "Engine.h"
 #include "NEHSaveGame.h"
 #include "Kismet/GameplayStatics.h"
 

@@ -3,6 +3,7 @@
 #include "GameFramework/Character.h"
 #include "InventoryInterface.h"
 #include "InteractiveObject.h"
+#include "NEHMotionController.h"
 #include "NoEndHouseCharacter.generated.h"
 
 class UInputComponent;
@@ -20,6 +21,15 @@ class ANoEndHouseCharacter : public ACharacter, public IInventoryInterface
 	UPROPERTY(VisibleDefaultsOnly, Category=Mesh)
 	class USkeletalMeshComponent* Mesh1P;
 
+	UPROPERTY(EditAnywhere, Category = Mesh)
+	class USkeletalMesh* HandMesh;
+
+	UPROPERTY(EditAnywhere, Category = Mesh)
+	TSubclassOf<UAnimInstance> HandAnimationBP;
+
+	/** Location on VR gun mesh where projectiles should spawn. */
+	UPROPERTY(VisibleDefaultsOnly, Category = Mesh)
+	class USceneComponent* VROrigin;
 
 	/** First person camera */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
@@ -37,6 +47,14 @@ class ANoEndHouseCharacter : public ACharacter, public IInventoryInterface
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	class UPointLightComponent* AmbientLight;
+
+	/** Motion controller (right hand) */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	class ANEHMotionController* R_MotionController;
+
+	/** Motion controller (left hand) */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	class ANEHMotionController* L_MotionController;
 
 	bool bCameraShakeWalking;
 	bool bCameraShakeWalkingRight;
@@ -64,12 +82,18 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Gameplay)
 	FVector GunOffset;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float DefaultPlayerHeight;
+
 	//crouching variables
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Movement)
 		FVector vCameraLocation;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Movement)
 	bool bIsCrouching;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Gameplay)
+	bool bUseHMD;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Gameplay)
 		float Sanity;
@@ -288,6 +312,11 @@ protected:
 
 	void BeginObjectInteraction();
 	void EndObjectInteraction();
+
+	void BeginGrabLeft();
+	void EndGrabLeft();
+	void BeginGrabRight();
+	void EndGrabRight();
 
 	void StartObserving();
 	void EndObserving(bool applyForces);

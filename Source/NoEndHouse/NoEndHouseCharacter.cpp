@@ -8,8 +8,11 @@
 #include "PhysicsEngine/PhysicsHandleComponent.h"
 #include "PhysicsEngine/DestructibleActor.h"
 #include "Components/DestructibleComponent.h"
+#include "MotionControllerComponent.h"
+#include "Runtime/HeadMountedDisplay/Public/HeadMountedDisplay.h"
+#include "Kismet/HeadMountedDisplayFunctionLibrary.h"
 #include "NoEndHouseHUD.h"
-
+#include "IHeadMountedDisplay.h"
 #include "Sound/SoundCue.h"
 #include "NEHGameState.h"
 
@@ -27,21 +30,26 @@ ANoEndHouseCharacter::ANoEndHouseCharacter()
 	BaseTurnRate = 45.f;
 	BaseLookUpRate = 45.f;
 
+
+	VROrigin = CreateDefaultSubobject<USceneComponent>(TEXT("VROrigin"));
+	VROrigin->SetupAttachment(RootComponent);
+	VROrigin->RelativeLocation = FVector(0.0f, 0.0f, 0.0f); // Position the camera
+
 	// Create a CameraComponent	
 	FirstPersonCameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("FirstPersonCamera"));
-	FirstPersonCameraComponent->AttachToComponent(GetCapsuleComponent(), FAttachmentTransformRules::KeepWorldTransform);
-	FirstPersonCameraComponent->RelativeLocation = FVector(0, 0, 64.f); // Position the camera
+	FirstPersonCameraComponent->AttachToComponent(VROrigin, FAttachmentTransformRules::KeepWorldTransform);
+	FirstPersonCameraComponent->RelativeLocation = FVector(0, 0, 0.f); // Position the camera
 	FirstPersonCameraComponent->bUsePawnControlRotation = true;
 
 	// Create a mesh component that will be used when being viewed from a '1st person' view (when controlling this pawn)
 	Mesh1P = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("CharacterMesh1P"));
 	Mesh1P->SetOnlyOwnerSee(true);
-	Mesh1P->AttachToComponent(FirstPersonCameraComponent, FAttachmentTransformRules::KeepWorldTransform);
+	Mesh1P->AttachToComponent(VROrigin, FAttachmentTransformRules::KeepWorldTransform);
 	Mesh1P->bCastDynamicShadow = false;
 	Mesh1P->CastShadow = false;
 
 	AmbientLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("AmbientLight"));
-	AmbientLight->AttachToComponent(GetCapsuleComponent(), FAttachmentTransformRules::KeepWorldTransform);
+	AmbientLight->AttachToComponent(VROrigin, FAttachmentTransformRules::KeepWorldTransform);
 	AmbientLight->RelativeLocation = FVector(0, 0, 41.0f);
 	AmbientLight->SetMobility(EComponentMobility::Movable);
 	AmbientLight->Intensity = 10.0f;
@@ -49,6 +57,7 @@ ANoEndHouseCharacter::ANoEndHouseCharacter()
 	AmbientLight->AttenuationRadius = 125.0f;
 	AmbientLight->SourceRadius = 50.0f;
 	AmbientLight->SourceLength = 50.0f;
+
 
 	bCameraShakeWalking = bCameraShakeWalkingRight = false;
 
@@ -97,7 +106,11 @@ ANoEndHouseCharacter::ANoEndHouseCharacter()
 	lastStaticMeshComp = nullptr;
 	fLastTime = fCurrentTime = 0;
 
+	DefaultPlayerHeight = 180.0f;
+
 	bCanMove = true;
+
+
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -119,6 +132,12 @@ void ANoEndHouseCharacter::SetupPlayerInputComponent(class UInputComponent* Inpu
 
 	InputComponent->BindAction("Use", IE_Pressed, this, &ANoEndHouseCharacter::Use);
 	InputComponent->BindAction("Use", IE_Released, this, &ANoEndHouseCharacter::EndUse);
+
+	InputComponent->BindAction("GrabLeft", IE_Pressed, this, &ANoEndHouseCharacter::BeginGrabLeft);
+	InputComponent->BindAction("GrabLeft", IE_Released, this, &ANoEndHouseCharacter::EndGrabLeft);
+
+	InputComponent->BindAction("GrabRight", IE_Pressed, this, &ANoEndHouseCharacter::BeginGrabRight);
+	InputComponent->BindAction("GrabRight", IE_Released, this, &ANoEndHouseCharacter::EndGrabRight);
 
 	InputComponent->BindAction("ObjectInteraction", IE_Pressed, this, &ANoEndHouseCharacter::BeginObjectInteraction);
 	InputComponent->BindAction("ObjectInteraction", IE_Released, this, &ANoEndHouseCharacter::EndObjectInteraction);
@@ -396,6 +415,55 @@ void ANoEndHouseCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 
+
+	if (GEngine && GEngine->HMDDevice->IsHMDConnected())
+	{
+		switch (GEngine->HMDDevice->GetHMDDeviceType())
+		{
+		case EHMDDeviceType::DT_OculusRift:
+		case EHMDDeviceType::DT_SteamVR:
+			GEngine->HMDDevice->SetTrackingOrigin(EHMDTrackingOrigin::Floor); //windows (Vive/Oculus)
+			break;
+		case EHMDDeviceType::DT_Morpheus:
+			GEngine->HMDDevice->SetTrackingOrigin(EHMDTrackingOrigin::Eye); //PS4
+			VROrigin->AddLocalOffset(FVector(0, 0, DefaultPlayerHeight));
+			break;
+		}
+		bUseHMD = true;
+
+
+		auto world = GetWorld();
+		if (world)
+		{
+			FActorSpawnParameters p;
+			p.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+			p.Owner = this;
+			L_MotionController = world->SpawnActor<ANEHMotionController>(ANEHMotionController::StaticClass(), FTransform::Identity, p);
+			if (HandMesh != NULL)
+			{
+				L_MotionController->SetHand(EControllerHand::Left, HandMesh, HandAnimationBP);
+			}
+			
+			
+			L_MotionController->AttachToComponent(VROrigin, FAttachmentTransformRules(EAttachmentRule::SnapToTarget, EAttachmentRule::KeepRelative, EAttachmentRule::KeepWorld, false));
+			
+
+			R_MotionController = world->SpawnActor<ANEHMotionController>(ANEHMotionController::StaticClass(), FTransform::Identity, p);
+			if (HandMesh != NULL) 
+			{
+				R_MotionController->SetHand(EControllerHand::Right, HandMesh, HandAnimationBP);
+			}
+			
+			R_MotionController->AttachToComponent(VROrigin, FAttachmentTransformRules(EAttachmentRule::SnapToTarget, EAttachmentRule::KeepRelative, EAttachmentRule::KeepWorld, false));
+			
+		}
+	}
+	else
+	{
+		VROrigin->AddLocalOffset(FVector(0, 0, DefaultPlayerHeight));
+		bUseHMD = false;
+	}
+
 	//create blink material instance from blink material defined in default properties
 	if (BlinkMaterial)
 	{
@@ -532,10 +600,16 @@ void ANoEndHouseCharacter::StopObservingObject(bool applyDefaultPhysics /*= true
 
 void ANoEndHouseCharacter::Use()
 {
-	if (bPhysicsHandleActive)
-		EndObserving(true);
+	if (bUseHMD)
+	{
+	}
 	else
-		StartObserving();
+	{
+		if (bPhysicsHandleActive)
+			EndObserving(true);
+		else
+			StartObserving();
+	}
 }
 
 void ANoEndHouseCharacter::EndUse()
@@ -607,10 +681,10 @@ void ANoEndHouseCharacter::StartObserving()
 			FVector grabOffset = HitResultObservComponent->GetCenterOfMass() - hitResult.ImpactPoint;
 
 			//setting location and rotation of same handle causes object to fly away at high speed rotations...
-			PhysicsHandleLoc->GrabComponent(HitResultObservComponent.Get(), NAME_None, centerOfMass, false);
+			PhysicsHandleLoc->GrabComponentAtLocation(HitResultObservComponent.Get(), NAME_None, centerOfMass);
 			//hint: the last bool is important, it prevents the object from jiggle around!
 			//This cost us hours to figure out how to prevent the jiggle -.-
-			PhysicsHandleRot->GrabComponent(HitResultObservComponent.Get(), NAME_None, centerOfMass, true);
+			PhysicsHandleRot->GrabComponentAtLocationWithRotation(HitResultObservComponent.Get(), NAME_None, centerOfMass, FRotator::ZeroRotator);
 
 			//dont collide with ourself and other pawns
 			HitResultObservComponent->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
@@ -688,6 +762,30 @@ void ANoEndHouseCharacter::BeginObjectInteraction()
 void ANoEndHouseCharacter::EndObjectInteraction()
 {
 	bIsHeld = false;
+}
+
+void ANoEndHouseCharacter::BeginGrabLeft()
+{
+	if (!bUseHMD) return;
+	L_MotionController->GrabActor();
+}
+
+void ANoEndHouseCharacter::EndGrabLeft()
+{
+	if (!bUseHMD) return;
+	L_MotionController->ReleaseActor();
+}
+
+void ANoEndHouseCharacter::BeginGrabRight()
+{
+	if (!bUseHMD) return;
+	R_MotionController->GrabActor();
+}
+
+void ANoEndHouseCharacter::EndGrabRight()
+{
+	if (!bUseHMD) return;
+	R_MotionController->ReleaseActor();
 }
 
 float ANoEndHouseCharacter::TakeDamage(float Damage, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, class AActor* DamageCauser)

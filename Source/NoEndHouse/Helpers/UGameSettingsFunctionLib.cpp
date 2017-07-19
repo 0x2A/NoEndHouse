@@ -91,7 +91,7 @@ void UGameSettingsFunctionLib::ApplyUserGraphicSettings(FGraphicSettings setting
 	userSettings->ConfirmVideoMode();
 	userSettings->RequestResolutionChange(settings.Resolution.Width, settings.Resolution.Height, mode, true);
 	userSettings->SetScreenResolution(FIntPoint(settings.Resolution.Width, settings.Resolution.Height));
-	userSettings->SetResolutionScaleValue(100.0f);
+	userSettings->SetResolutionScaleValueEx(100.0f);
 	Scalability::SaveState(GGameUserSettingsIni);
 	userSettings->ApplySettings(true);
 }
